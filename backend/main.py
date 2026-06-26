@@ -110,10 +110,6 @@ class NLReq(BaseModel):
     max_candidates: int = 25
 
 
-# InvestigateReq + the other agent request models live with their
-# endpoints in backend/agent_routes.py.
-
-
 # -----------------------------
 # Auth — the community edition has no authentication.
 # -----------------------------
@@ -751,18 +747,8 @@ async def invoke(req: InvokeReq, token: str = Depends(require_bearer)):
         raise
 
 
-# -----------------------------
-# Agent: read-only investigation skills
-# -----------------------------
-import agent as _agent
-
-
-# ── Agent endpoints (backend/agent_routes.py) ─
-# The /api/agent/* endpoints + the per-skill helpers (budget gate, openai
-# chat factory, webhook fire, invoke_tool / fetch_catalog adapters) live
-# in a single APIRouter that we wire here.
-from agent_routes import router as _agent_router
-app.include_router(_agent_router)
+# (The AI Agent Skills subsystem — the LLM investigation engine + skills +
+# /api/agent/* endpoints — has been REMOVED; it is an enterprise feature.)
 
 
 @app.get("/api/audit")

@@ -5,22 +5,6 @@
 // header, no 401 → refresh dance, and no login. The five HTTP verbs and
 // the raw-Response fetch helper simply throw on a non-OK response.
 
-function authHeaders(): Record<string, string> {
-  // Auth-free community client — no Authorization header.
-  return {};
-}
-
-/**
- * Raw fetch helper for callers that need to stream the body themselves
- * (the agent investigate SSE endpoint). Auth-free: no 401 retry.
- */
-export async function authedFetchWithRetry(input: RequestInfo, init: RequestInit = {}): Promise<Response> {
-  return fetch(input, {
-    ...init,
-    headers: { ...(init.headers || {}), ...authHeaders() },
-  });
-}
-
 export async function getJSON<T>(path: string): Promise<T> {
   const r = await fetch(path);
   if (!r.ok) throw new Error(await r.text());

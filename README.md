@@ -2,9 +2,8 @@
 
 A lean, **read-only, authentication-free** web client for the
 community-grade **XCO MCP server** (ExtremeCloud Orchestrator). Ask a
-question in natural language, browse the live tool catalog, or run a
-read-only investigation — all against a Tier-1/Tier-2 SAFE_READ MCP
-server that requires no login.
+question in natural language or browse the live tool catalog — all against
+a Tier-1/Tier-2 SAFE_READ MCP server that requires no login.
 
 > ## ⚠️ Read this first
 >
@@ -34,9 +33,8 @@ server that requires no login.
   structured tool call plus a rendered result.
 - **Tools browser** — the live MCP catalog (`/api/tools`) with a
   schema-driven input form; run any read tool and view its payload.
-- **Read-only investigations** — bounded LLM tool-use loops that chain read
-  tools into a Markdown report (fabric-health, post-firmware verification,
-  pre-RMA checks).
+- **Fleet + search widgets** — fabric topology diagram, fleet inventory
+  (serials, CSV export), transceiver inventory, IP/MAC "where is X" search.
 - **Per-switch widgets** — typed viewers for RESTCONF / inventory payloads
   (interfaces, ARP, LLDP, running-config, clocks, VRF/VLAN summaries, …).
 - **Activity log** — a tail of every operator-visible event (`/api/audit`).
@@ -92,17 +90,14 @@ persisted to `backend/client_settings.json`.
 ```
 backend/
   main.py            FastAPI app — NL routing, tool proxy, audit, settings
-  core/              primitives: mcp_client · settings · llm · sse · audit ·
+  core/              primitives: mcp_client · settings · llm · audit ·
                      tool_catalog · openai_usage · auth (no-op) · paths
   nl/                natural-language routing (deterministic + LLM tiers)
-  agent/             read-only investigation engine
-  agent_routes.py    /api/agent/* — skills list + investigate
-  agent_skills/*.md  the 5 read-only investigation skills
   tests/             pytest unit tests + an integration smoke test
 frontend/
   src/App.tsx        app shell — state, routing, the NL console
-  src/features/      tools browser · agent investigate · viz blocks · widgets
-  src/components/    per-switch read widgets + shared UI
+  src/features/      tools browser · viz blocks · widgets
+  src/components/    per-switch + fleet read widgets + shared UI
   src/lib/           API client · typed-invoke · hooks
 ```
 

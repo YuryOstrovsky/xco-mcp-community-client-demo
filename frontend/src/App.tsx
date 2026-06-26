@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 import {
-  getJSON, postJSON, patchJSON, streamSSE,
+  getJSON, postJSON, patchJSON,
 } from "./lib/api";
 // Typed /api/invoke wrapper — opt-in alternative to postJSON where the tool
 // name is a compile-time literal. See lib/typedInvoke.ts.
@@ -33,16 +33,10 @@ import { useAllClocks } from "./lib/useAllClocks";
 // Interface Dashboard + Detail widget state (open flags + filter + sort
 // + detail tab).
 import { useIfaceWidgets } from "./lib/useIfaceWidgets";
-// Agent-skill metadata: useAgentSkillsRegistry does a one-shot
-// /api/agent/skills fetch (drives the keyword-tier suggestion chip).
-import { useAgentSkillsRegistry } from "./lib/useAgentSkillsRegistry";
 import DashboardView from "./DashboardView";
 import {
   widgetContainer,
 } from "./lib/figmaStyles";
-import { AiInvestigationSkillsDropdown } from "./features/agent/AiInvestigationSkillsDropdown";
-import { InvestigateModal } from "./features/agent/InvestigateModal";
-import { SkillPromptModal } from "./features/agent/SkillPromptModal";
 import { CopyButton } from "./components/CopyButton";
 import { ClockWidget } from "./components/ClockWidget";
 import { FirmwareVersionWidget } from "./components/FirmwareVersionWidget";
@@ -64,7 +58,6 @@ import { Panel } from "./components/Panel";
 import { Card } from "./components/Card";
 import { SwitchPickerModal } from "./components/SwitchPickerModal";
 import { AdminSidebar } from "./components/AdminSidebar";
-import { SkillSuggestionChip } from "./components/SkillSuggestionChip";
 import { DeviceHealthViz } from "./features/viz/DeviceHealthViz";
 import { HaHealthViz } from "./features/viz/HaHealthViz";
 import { NotifEventsViz } from "./features/viz/NotifEventsViz";
@@ -76,7 +69,6 @@ import { SimpleToolResultWidgetMount } from "./lib/SimpleToolResultWidgetMount";
 import { ToolResultMounts } from "./lib/ToolResultMounts";
 import { substituteSwitchNames, unresolvedSwitchRef } from "./lib/nl/switchNameToIp";
 import { useElapsedMsWhile } from "./lib/useElapsedMsWhile";
-import { renderMarkdown } from "./lib/renderMarkdown";
 import { RunningConfigWidget } from "./features/widgets/RunningConfigWidget";
 import { AllClocksModal } from "./features/widgets/AllClocksModal";
 import { IfaceWidget } from "./features/widgets/IfaceWidget";
@@ -153,8 +145,6 @@ function pickStr(v: any): string | null {
 
 
 
-
-// Tiny inline Markdown renderer — see lib/renderMarkdown.tsx.
 
 // ── NL intent detectors ──────────────────────────────────────────────────────
 // Pure regex-driven classifiers in lib/nl/detectors.ts.
@@ -415,66 +405,11 @@ export default function App() {
   const [cachedUptime, setCachedUptime] = useState<string>("");
   const [err, setErr] = useState<string>("");
   const [nlRunning, setNlRunning] = useState<boolean>(false);
-  // nlElapsedMs / investigateElapsedMs now come from useElapsedMsWhile below.
+  // nlElapsedMs now comes from useElapsedMsWhile below.
   const nlReqSeq = useRef<number>(0);
 
-  // Agent investigation (read-only, multi-step LLM loop)
-  const [investigateOpen, setInvestigateOpen] = useState<boolean>(false);
-  const [investigateRunning, setInvestigateRunning] = useState<boolean>(false);
-  // investigateElapsedMs comes from useElapsedMsWhile below.
-  const [investigateResult, setInvestigateResult] = useState<{
-    skill?: string;
-    synthesis?: string;
-    trace?: any[];
-    stop_reason?: string;
-    tool_calls?: number;
-    turns?: number;
-    elapsed_ms?: number;
-    error?: string;
-  } | null>(null);
-  // Agent skill registry, fetched once from /api/agent/skills. Used by
-  // the (keyword-tier) SkillSuggestionChip. Hook owns the fetch.
-  const agentSkillsRegistry = useAgentSkillsRegistry();
-  // Operator can dismiss the chip for a specific text — keep the
-  // dismissed text so we don't re-show until they edit the prompt.
-  const [skillChipDismissedFor, setSkillChipDismissedFor] = useState<string>("");
-  const [investigateTraceOpen, setInvestigateTraceOpen] = useState<boolean>(false);
-  // Live events accumulated during streaming (cleared each run). Once the
-  // `done` event arrives we move them onto investigateResult.trace.
-  const [investigateLiveTrace, setInvestigateLiveTrace] = useState<any[]>([]);
-  // Which skill is the currently-running (or last-run) one — drives the
-  // panel title and the running spinner's verb.
-  const [investigateActiveSkillKey, setInvestigateActiveSkillKey] = useState<string | null>(null);
-  // Dropdown open/close for the AI Agent Skills picker.
-  // (aiSkillsMenu open/closed state + ref + click-outside effect now live
-  //  inside features/agent/AiInvestigationSkillsDropdown.)
-  // Per-skill input-prompt modal. Opened when the user clicks a skill that
-  // requires inputs (e.g. failed-switch IP for Pre-RMA Check) but didn't
-  // type them. Resolves with the composed query when the user submits.
-  const [skillPromptOpen, setSkillPromptOpen] = useState<boolean>(false);
-  const [skillPromptSkillKey, setSkillPromptSkillKey] = useState<string>("");
-  const [skillPromptValues, setSkillPromptValues] = useState<Record<string, string>>({});
-  const [skillPromptError, setSkillPromptError] = useState<string>("");
-  // Auto-scroll target for the live streaming trace — keeps the most
-  // recent step in view as events arrive. Sticky-only when the user is
-  // already near the bottom (don't yank the view if they scrolled up).
-  const liveTraceScrollRef = useRef<HTMLDivElement>(null);
-
-  // Lightweight progress indicators — via shared useElapsedMsWhile hook.
+  // Lightweight progress indicator — via shared useElapsedMsWhile hook.
   const nlElapsedMs = useElapsedMsWhile(nlRunning, 200);
-  const investigateElapsedMs = useElapsedMsWhile(investigateRunning, 250);
-
-  // Auto-scroll the live trace so the latest step stays in view.
-  // Sticky-only: if the user has scrolled up to read an earlier step,
-  // leave them alone — don't yank the view back to the bottom.
-  useEffect(() => {
-    const el = liveTraceScrollRef.current;
-    if (!el) return;
-    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (distanceFromBottom < 80) {
-      el.scrollTop = el.scrollHeight;
-    }
-  }, [investigateLiveTrace.length]);
 
 
   // Simple tab switch (no router)
@@ -1130,7 +1065,6 @@ async function randomExample() {
   function closeAllTier3Widgets() {
     setAdminActivityOpen(false);
     setAdminSettingsOpen(false);
-    setInvestigateOpen(false);
     setAllClocksOpen(false);
     // Close inline console widgets & topology
     setQuickActive("");
@@ -1427,379 +1361,6 @@ async function randomExample() {
     if (match) {
       match.setOpen(true);
       match.onOpen?.();
-    }
-  }
-
-  // Per-skill quick-run config. Each AI Agent button in the AI Console
-  // calls runAgentSkill with one of these. To add a new skill: add a
-  // backend/agent_skills/<name>.md, append an entry here, and (in the
-  // Console JSX) a new button that calls runAgentSkill with the key.
-  //
-  // `defaultQuery` is what the agent receives when the user clicks the
-  // button without typing anything — the skill is expected to handle
-  // these bare queries (auto-discover fabric, etc.). The skill prompt
-  // is the source of truth for that behavior.
-  const AGENT_SKILLS: Record<string, {
-    skill: string;
-    defaultQuery: string;
-    buttonLabel: string;        // short label rendered in the dropdown row
-    panelDisplayName: string;   // shown in the result panel title
-    description: string;        // 1-line description in the dropdown row
-    verb: string;               // "Investigating" / "Verifying" / etc.
-    accent: string;             // dot color in dropdown row
-    /** When set, clicking the skill with no relevant input in the text box
-     *  opens a small modal asking for the specified field(s). The values
-     *  get composed into a query string before the skill runs. */
-    inputPrompt?: {
-      title: string;
-      fields: { key: string; label: string; placeholder?: string; required?: boolean }[];
-      composeQuery: (vals: Record<string, string>, originalText: string) => string;
-      // Optional predicate: if returns true on the current text, skip the prompt
-      // (because the user already typed enough info). Default: skip if any IP
-      // address is present in the text.
-      skipIf?: (text: string) => boolean;
-    };
-  }> = {
-    investigate: {
-      skill: "fabric-health-investigation",
-      defaultQuery: "investigate the health of the network",
-      buttonLabel: "Investigate",
-      panelDisplayName: "Fabric Health Investigation",
-      description: "Diagnose why a fabric is unhealthy — chains alarms → BGP → interfaces → firmware checks.",
-      verb: "Investigating",
-      accent: "#a78bfa",
-    },
-    preflightUpgrade: {
-      skill: "pre-firmware-upgrade-check",
-      defaultQuery: "check if we are ready to upgrade firmware",
-      buttonLabel: "Pre-flight Upgrade Check",
-      panelDisplayName: "Pre-Firmware-Upgrade Readiness Check",
-      description: "Go/no-go gate before a firmware upgrade: storage, alarms, BGP, version baseline, reachability, drift.",
-      verb: "Pre-checking",
-      accent: "#fbbf24",
-    },
-    verifyUpgrade: {
-      skill: "post-firmware-upgrade-verification",
-      defaultQuery: "verify the most recent firmware upgrade",
-      buttonLabel: "Verify Upgrade",
-      panelDisplayName: "Post-Firmware-Upgrade Verification",
-      description: "5-point checklist after a firmware upgrade: version, commit state, reachability, BGP, alarms.",
-      verb: "Verifying",
-      accent: "#34d399",
-    },
-    safeFabricCleanup: {
-      skill: "safe-fabric-cleanup",
-      defaultQuery: "is this fabric safe to delete?",
-      buttonLabel: "Safe Fabric Cleanup",
-      panelDisplayName: "Safe Fabric Cleanup (proposal-capable)",
-      description: "Audits a named fabric (zero switches? long-stale status? no recent activity?) and proposes deletion if safe. The first skill that ENDS in a gated mutation — operator approves to execute.",
-      verb: "Auditing",
-      accent: "#fb7185",
-      // The skill needs a fabric name. Prompt if the user didn't type one
-      // we recognize. Same UX pattern as Pre-RMA Check.
-      inputPrompt: {
-        title: "Safe Fabric Cleanup — which fabric?",
-        fields: [
-          { key: "fabricName", label: "Fabric name (required)", placeholder: "e.g. lab-decom-old", required: true },
-        ],
-        composeQuery: (vals, originalText) => {
-          const f = (vals.fabricName || "").trim();
-          const base = (originalText.trim() || "is this fabric safe to delete?");
-          return f ? `${base} fabric ${f}` : base;
-        },
-        // Skip the prompt if the operator already mentioned a fabric name
-        // anywhere in the text — same heuristic as the RMA skill.
-        skipIf: (text) => /\bfabric\s+[A-Za-z0-9_\-]+/i.test(text),
-      },
-    },
-    decommissionStaleSwitch: {
-      skill: "decommission-stale-switch",
-      defaultQuery: "is this switch safe to decommission?",
-      buttonLabel: "Decommission Stale Switch",
-      panelDisplayName: "Decommission Stale Switch (proposal-capable)",
-      description: "Audits a switch IP for long-unreachability, absence of recent activity, and no non-unreachable alarms. Proposes inventory_delete_switch if safe. Second proposal_capable skill — proves the pattern from Safe Fabric Cleanup generalizes per-device.",
-      verb: "Auditing switch",
-      accent: "#f97316",
-      // Skill needs the switch IP. Same pattern as Pre-RMA: prompt if
-      // not present in the text, skip if it is.
-      inputPrompt: {
-        title: "Decommission Stale Switch — which switch?",
-        fields: [
-          { key: "switchIp", label: "Switch IP (required)", placeholder: "e.g. 10.9.140.31", required: true },
-        ],
-        composeQuery: (vals, originalText) => {
-          const ip = (vals.switchIp || "").trim();
-          const base = (originalText.trim() || "is this switch safe to decommission?");
-          return ip ? `${base} switch ${ip}` : base;
-        },
-        skipIf: (text) => /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(text),
-      },
-    },
-    decommissionTenantFully: {
-      skill: "decommission-tenant-fully",
-      defaultQuery: "decommission this tenant fully",
-      buttonLabel: "Decommission Tenant Fully",
-      panelDisplayName: "Decommission Tenant Fully (chained proposal)",
-      description: "Enumerates a tenant's VRFs + EPGs and proposes a CHAINED decommissioning — delete each attachment, then the tenant itself, as a single approve-or-reject. Sixth proposal_capable skill and the first to emit multi-step proposals.",
-      verb: "Building chain for tenant",
-      accent: "#e879f9",
-      inputPrompt: {
-        title: "Decommission Tenant Fully — which tenant?",
-        fields: [
-          { key: "tenantName", label: "Tenant name (required)", placeholder: "e.g. lab-experiment-2025", required: true },
-        ],
-        composeQuery: (vals, originalText) => {
-          const t = (vals.tenantName || "").trim();
-          const base = (originalText.trim() || "decommission this tenant fully");
-          return t ? `${base} tenant ${t}` : base;
-        },
-        skipIf: (text) => /\btenant\s+[A-Za-z0-9_\-]+/i.test(text),
-      },
-    },
-    retireUnusedTenant: {
-      skill: "retire-unused-tenant",
-      defaultQuery: "is this tenant safe to retire?",
-      buttonLabel: "Retire Unused Tenant",
-      panelDisplayName: "Retire Unused Tenant (proposal-capable)",
-      description: "Audits a tenant for zero-attachment status (no VRFs, no EPGs, no port-channels, no recent activity) and proposes tenant_delete if safe. Third proposal_capable skill — covers the application overlay tier after fabric (#5) and switch (#6) levels.",
-      verb: "Auditing tenant",
-      accent: "#a855f7",
-      // Skill needs a tenant name. Same prompt/skip pattern as the
-      // fabric cleanup skill.
-      inputPrompt: {
-        title: "Retire Unused Tenant — which tenant?",
-        fields: [
-          { key: "tenantName", label: "Tenant name (required)", placeholder: "e.g. lab-old-test", required: true },
-        ],
-        composeQuery: (vals, originalText) => {
-          const t = (vals.tenantName || "").trim();
-          const base = (originalText.trim() || "is this tenant safe to retire?");
-          return t ? `${base} tenant ${t}` : base;
-        },
-        // Skip prompt if operator already typed a tenant name.
-        skipIf: (text) => /\btenant\s+[A-Za-z0-9_\-]+/i.test(text),
-      },
-    },
-    orphanedPortChannel: {
-      skill: "orphaned-port-channel",
-      defaultQuery: "is this port-channel safe to delete?",
-      buttonLabel: "Orphaned Port-Channel",
-      panelDisplayName: "Orphaned Port-Channel (proposal-capable)",
-      description: "Audits a single port-channel (inside a named tenant) for orphan status: no member interfaces, no EPG binding, no recent activity. Proposes tenant_delete_portchannel if safe. Seventh proposal_capable skill — physical-layer cleanup target.",
-      verb: "Auditing port-channel",
-      accent: "#14b8a6",
-      inputPrompt: {
-        title: "Orphaned Port-Channel — which PC in which tenant?",
-        fields: [
-          { key: "tenantName", label: "Tenant name (required)", placeholder: "e.g. lab-staging", required: true },
-          { key: "poName",     label: "Port-channel name (required)", placeholder: "e.g. po-test-bundle", required: true },
-        ],
-        composeQuery: (vals, originalText) => {
-          const t = (vals.tenantName || "").trim();
-          const p = (vals.poName || "").trim();
-          const base = (originalText.trim() || "is this port-channel safe to delete?");
-          if (t && p) return `${base} tenant ${t} port-channel ${p}`;
-          if (p) return `${base} port-channel ${p}`;
-          return base;
-        },
-        skipIf: (text) => /\btenant\s+[A-Za-z0-9_\-]+/i.test(text) && /\b(po|port[\s-]?channel)\s+[A-Za-z0-9_\-]+/i.test(text),
-      },
-    },
-    orphanedEndpointGroup: {
-      skill: "orphaned-endpoint-group",
-      defaultQuery: "is this EPG safe to delete?",
-      buttonLabel: "Orphaned EPG",
-      panelDisplayName: "Orphaned Endpoint Group (proposal-capable)",
-      description: "Audits a single EPG (inside a named tenant) for orphan status: no port-channels attached, no errors, no recent activity. Proposes tenant_delete_endpoint_group if safe. Fifth proposal_capable skill — sibling to clean-orphaned-vrf at the L2 attachment tier.",
-      verb: "Auditing EPG",
-      accent: "#22d3ee",
-      inputPrompt: {
-        title: "Orphaned EPG — which EPG in which tenant?",
-        fields: [
-          { key: "tenantName", label: "Tenant name (required)", placeholder: "e.g. lab-test", required: true },
-          { key: "epgName",    label: "EPG name (required)",    placeholder: "e.g. experiment-l2", required: true },
-        ],
-        composeQuery: (vals, originalText) => {
-          const t = (vals.tenantName || "").trim();
-          const e = (vals.epgName || "").trim();
-          const base = (originalText.trim() || "is this EPG safe to delete?");
-          if (t && e) return `${base} tenant ${t} epg ${e}`;
-          if (e) return `${base} epg ${e}`;
-          return base;
-        },
-        skipIf: (text) => /\btenant\s+[A-Za-z0-9_\-]+/i.test(text) && /\b(epg|endpoint[\s-]?group)\s+[A-Za-z0-9_\-]+/i.test(text),
-      },
-    },
-    cleanOrphanedVrf: {
-      skill: "clean-orphaned-vrf",
-      defaultQuery: "is this VRF safe to delete?",
-      buttonLabel: "Clean Orphaned VRF",
-      panelDisplayName: "Clean Orphaned VRF (proposal-capable)",
-      description: "Audits a single VRF (inside a named tenant) for orphan status: no static routes, no BGP peers, no recent activity, no errors. Proposes tenant_delete_vrf if safe. Fourth proposal_capable skill — finest-grained mutation target so far.",
-      verb: "Auditing VRF",
-      accent: "#06b6d4",
-      // Skill needs BOTH a tenant name and a VRF name — two-field prompt.
-      inputPrompt: {
-        title: "Clean Orphaned VRF — which VRF in which tenant?",
-        fields: [
-          { key: "tenantName", label: "Tenant name (required)", placeholder: "e.g. lab-test", required: true },
-          { key: "vrfName",    label: "VRF name (required)",    placeholder: "e.g. experiment-dev", required: true },
-        ],
-        composeQuery: (vals, originalText) => {
-          const t = (vals.tenantName || "").trim();
-          const v = (vals.vrfName || "").trim();
-          const base = (originalText.trim() || "is this VRF safe to delete?");
-          if (t && v) return `${base} tenant ${t} vrf ${v}`;
-          if (v) return `${base} vrf ${v}`;
-          return base;
-        },
-        // Skip the prompt if the operator already typed both a tenant
-        // and a VRF reference inline.
-        skipIf: (text) => /\btenant\s+[A-Za-z0-9_\-]+/i.test(text) && /\bvrf\s+[A-Za-z0-9_\-]+/i.test(text),
-      },
-    },
-    rmaCheck: {
-      skill: "pre-rma-check",
-      defaultQuery: "check rma readiness",
-      buttonLabel: "Pre-RMA Check",
-      panelDisplayName: "Pre-RMA Readiness Check",
-      description: "Go/no-go gate before a switch RMA: failed-switch ID, unreachability, MCT partner health, new-switch reachability, model match, fabric baseline.",
-      verb: "Checking RMA",
-      accent: "#f87171",
-      // The skill needs at minimum a failed-switch IP to do anything useful.
-      // If the user hasn't typed an IP, prompt for it so we don't waste a run
-      // on cannot_check_no_target.
-      inputPrompt: {
-        title: "Pre-RMA Check — required inputs",
-        fields: [
-          { key: "failedIp", label: "Failed switch IP (required)", placeholder: "e.g. 10.9.140.31", required: true },
-          { key: "newIp", label: "New switch IP (optional)", placeholder: "e.g. 10.9.140.99 — leave blank if not yet provisioned" },
-        ],
-        composeQuery: (vals, originalText) => {
-          const f = (vals.failedIp || "").trim();
-          const n = (vals.newIp || "").trim();
-          const base = (originalText.trim() || "rma check");
-          if (f && n) return `${base} on ${f} to ${n}`;
-          if (f) return `${base} on ${f}`;
-          return base;
-        },
-        // If the text already contains an IP, skip the prompt — user gave us
-        // what we need.
-        skipIf: (text) => /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(text),
-      },
-    },
-  };
-  type AgentSkillKey = keyof typeof AGENT_SKILLS;
-
-  async function runAgentSkill(skillKey: AgentSkillKey) {
-    const cfg = AGENT_SKILLS[skillKey];
-    // AI Agent buttons are self-contained — they run the skill's defined
-    // canned query (or open the skill's input modal). They DO NOT silently
-    // pick up whatever happens to be in the prompt box. The prompt box is
-    // for free-form chat (type + Enter); the agent buttons are dedicated
-    // skill launchers with predictable scope.
-    //
-    // Earlier behaviour pulled `text.trim() || cfg.defaultQuery` here, which
-    // meant a user with stale text in the box (e.g. "add 5 switches to
-    // lab-b") who later clicked "Investigate" got an LLM refusal because
-    // the read-only Investigate skill received the stale switch-add query.
-    // That was confusing and non-obvious — fixed.
-    if (cfg.inputPrompt) {
-      // Always open the skill's input modal. The modal collects the fields
-      // the skill actually needs (e.g. the failed-switch IP for Pre-RMA).
-      // No silent bypass.
-      //
-      // Convenience pre-fill: if the prompt box happens to contain an
-      // IP address AND the modal has a field whose key suggests it's
-      // an IP target, seed that field with the first IP we found. The
-      // operator sees the pre-filled value, can edit / clear / accept.
-      // No surprise.
-      setSkillPromptSkillKey(skillKey);
-      const ipMatch = text.match(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/);
-      const initial: Record<string, string> = {};
-      if (ipMatch) {
-        const ipKeyField = cfg.inputPrompt.fields.find((f) =>
-          /ip\b|address|target/i.test(f.key) || /ip\b|address/i.test(f.label)
-        );
-        if (ipKeyField) initial[ipKeyField.key] = ipMatch[0];
-      }
-      setSkillPromptValues(initial);
-      setSkillPromptError("");
-      setSkillPromptOpen(true);
-      return;
-    }
-    // No inputPrompt — run the skill's canned default query.
-    return runAgentSkillWithQuery(skillKey, cfg.defaultQuery);
-  }
-
-  async function runAgentSkillWithQuery(skillKey: AgentSkillKey, query: string) {
-    const cfg = AGENT_SKILLS[skillKey];
-    // Clear tier-2 console widgets (FleetInventory, PortStats, Firmware
-    // version, etc.) before opening the Investigate modal — otherwise
-    // the stale widget sits visible below the modal and looks like part
-    // of the new answer. Same intent as the reset blocks in runNL /
-    // runNLWithText: a new "answer flow" wipes the previous one's
-    // visible artefacts. Tier-3 modals (PlanDetail, Admin panels) stay
-    // because operators commonly run an AI skill alongside one.
-    closeAllConsoleWidgets();
-    // Also wipe the previous NL response — the viz panel (device_health,
-    // donut, bar, ha_health, exec_diagnostic, etc.) renders directly
-    // from `resp` via a useMemo and is gated independently of the
-    // per-widget flags above. Without this, a previous "device health"
-    // viz block stays visible below the Investigate modal.
-    setResp(null);
-    setInvestigateActiveSkillKey(skillKey);
-    setInvestigateRunning(true);
-    setInvestigateOpen(true);
-    setInvestigateResult(null);
-    setInvestigateLiveTrace([]);
-    setInvestigateTraceOpen(true);  // auto-open trace during streaming so user sees progress
-    setErr("");
-
-    const body: any = { query, skill: cfg.skill };
-
-    try {
-      // SSE consumer lives in lib/api.ts:streamSSE. The reusable helper
-      // is the consumer pair to backend/core/sse.py:queue_stream —
-      // together they stream a long-running tool's progress to the
-      // operator.
-      let gotDone = false;
-      await streamSSE<any>("/api/agent/investigate/stream", body, {
-        onEvent: (ev) => {
-          if (ev.kind === "done") {
-            gotDone = true;
-            setInvestigateResult(ev);
-          } else if (ev.kind === "error") {
-            setInvestigateResult({ error: ev.error || "Investigation failed" });
-            gotDone = true;
-          } else {
-            setInvestigateLiveTrace((prev) => [...prev, ev]);
-          }
-        },
-        onHttpError: (status) => {
-          // streamSSE returns instead of throwing when onHttpError is
-          // set; convert to a thrown error here so the outer catch
-          // triggers the non-streaming fallback below.
-          throw new Error(`stream_http_${status}`);
-        },
-      });
-      if (!gotDone) {
-        // Connection closed without a done event. Surface a soft error.
-        setInvestigateResult({ error: "Stream ended without a final 'done' event." });
-      }
-    } catch (streamErr: any) {
-      // Fall back to the non-streaming endpoint. Keeps a working agent on
-      // any reverse-proxy / network setup that doesn't pass SSE cleanly.
-      try {
-        const res = await postJSON<any>("/api/agent/investigate", body);
-        setInvestigateResult(res);
-      } catch (e: any) {
-        setInvestigateResult({
-          error: `Streaming failed (${streamErr?.message ?? "unknown"}); fallback also failed: ${e?.message ?? "unknown"}`,
-        });
-      }
-    } finally {
-      setInvestigateRunning(false);
     }
   }
 
@@ -4881,48 +4442,6 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
   );
 })()}
 
-{/* ── Per-skill Input Prompt (e.g. Pre-RMA needs a failed-switch IP) ──── */}
-{/* Skill input prompt — see features/agent/SkillPromptModal.tsx. */}
-<SkillPromptModal
-  open={skillPromptOpen}
-  config={(AGENT_SKILLS[skillPromptSkillKey] as any) ?? null}
-  values={skillPromptValues}
-  setValues={setSkillPromptValues}
-  error={skillPromptError}
-  setError={setSkillPromptError}
-  onClose={() => setSkillPromptOpen(false)}
-  onSubmit={() => {
-    const cfg = AGENT_SKILLS[skillPromptSkillKey];
-    if (!cfg?.inputPrompt) return;
-    const query = cfg.inputPrompt.composeQuery(skillPromptValues, text);
-    setSkillPromptOpen(false);
-    runAgentSkillWithQuery(skillPromptSkillKey as AgentSkillKey, query);
-  }}
-/>
-
-
-{/* ── Investigate (agent skill) result panel ──────────────────────────── */}
-{/* AI Agent Investigate — see features/agent/InvestigateModal.tsx. */}
-<InvestigateModal
-  open={investigateOpen}
-  title={(() => {
-    if (investigateActiveSkillKey && AGENT_SKILLS[investigateActiveSkillKey]) {
-      return `AI Agent — ${AGENT_SKILLS[investigateActiveSkillKey].panelDisplayName}`;
-    }
-    const fromResult = (investigateResult as any)?.skill || (investigateResult as any)?.skill_meta?.name;
-    return fromResult ? `AI Agent — ${fromResult}` : "AI Agent";
-  })()}
-  running={investigateRunning}
-  result={investigateResult as any}
-  liveTrace={investigateLiveTrace}
-  elapsedMs={investigateElapsedMs}
-  liveTraceScrollRef={liveTraceScrollRef}
-  traceOpen={investigateTraceOpen}
-  setTraceOpen={setInvestigateTraceOpen}
-  renderedSynthesis={investigateResult?.synthesis ? renderMarkdown(investigateResult.synthesis) : null}
-  onClose={() => setInvestigateOpen(false)}
-/>
-
 {/* ── Help / Capabilities Widget (Figma-styled modal) ──────────────── */}
 {/* Natural Language Examples (Help) — see features/help/HelpWidget.tsx. */}
 <HelpWidget
@@ -5177,35 +4696,6 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
               placeholder="Type a natural-language request…"
             />
 
-            {/* SkillSuggestionChip — see components/SkillSuggestionChip.tsx.
-                Matching logic kept here (parent owns the registry + dismissal
-                state); chip component is presentational. */}
-            {(() => {
-              const lower = text.trim().toLowerCase();
-              if (!lower || lower === skillChipDismissedFor.toLowerCase()) return null;
-              if (agentSkillsRegistry.length === 0) return null;
-              // Keyword-tier (client-side) match only.
-              const matched = agentSkillsRegistry.find((s) =>
-                s.trigger_keywords.some((kw) => lower.includes(kw.toLowerCase()))
-              );
-              if (!matched) return null;
-              const frontendKey = Object.keys(AGENT_SKILLS).find(
-                (k) => AGENT_SKILLS[k].skill === matched.name
-              );
-              if (!frontendKey) return null;
-              const cfg = AGENT_SKILLS[frontendKey];
-              return (
-                <SkillSuggestionChip
-                  matchedConfig={{ buttonLabel: cfg.buttonLabel, accent: cfg.accent, description: cfg.description }}
-                  matchedKey={frontendKey}
-                  isLlmSuggestion={false}
-                  llmReason=""
-                  onRun={(k) => runAgentSkill(k as AgentSkillKey)}
-                  onDismiss={() => setSkillChipDismissedFor(text)}
-                />
-              );
-            })()}
-
             <label className="flex items-center gap-2 text-sm mb-3">
               <input
                 type="checkbox"
@@ -5246,17 +4736,6 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
                 Example
               </button>
             </div>
-
-            {/* AI Investigation Skills dropdown — see features/agent/AiInvestigationSkillsDropdown.tsx. */}
-            <AiInvestigationSkillsDropdown
-              skills={AGENT_SKILLS}
-              runSkill={(k) => runAgentSkill(k as AgentSkillKey)}
-              onShowFullSkillSet={() => {}}
-              investigateRunning={investigateRunning}
-              nlRunning={nlRunning}
-              investigateActiveSkillKey={investigateActiveSkillKey || null}
-              investigateElapsedMs={investigateElapsedMs}
-            />
 
             {err && (
               <div className="mt-3 text-sm" style={{ color: "#ffb4b4" }}>

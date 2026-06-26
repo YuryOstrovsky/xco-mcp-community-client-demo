@@ -57,29 +57,6 @@ def _ok_tools(d: Any) -> Optional[str]:
     return None
 
 
-def _ok_agent_skills(d: Any) -> Optional[str]:
-    """Agent skills list must include the read-only investigation skills
-    shipped in the community edition. Regression check: if we lose a skill
-    file, or the loader stops parsing frontmatter, this catches it."""
-    if not isinstance(d, dict) or "skills" not in d:
-        return f"missing 'skills' key — got {type(d).__name__}"
-    skills = d["skills"]
-    if not isinstance(skills, list) or len(skills) < 1:
-        return "expected non-empty 'skills' list"
-    names = {s.get("name") for s in skills if isinstance(s, dict)}
-    must_have = {"fabric-health-investigation"}
-    missing = must_have - names
-    if missing:
-        return f"missing required skill(s): {sorted(missing)}"
-    # The community edition ships NO proposal_capable skills — every skill
-    # must be read-only. A skill flipping to proposal_capable here would
-    # mean a mutation-driving skill leaked back in.
-    leaked = [s.get("name") for s in skills if isinstance(s, dict) and s.get("proposal_capable")]
-    if leaked:
-        return f"proposal_capable skill(s) present in community edition: {sorted(leaked)}"
-    return None
-
-
 CASES: List[Tuple[str, str, str, Optional[Dict[str, Any]], list]] = [
     # ── Health + meta ────────────────────────────────────────────
     ("health",          "GET",  "/api/health",          None, []),
@@ -95,9 +72,6 @@ CASES: List[Tuple[str, str, str, Optional[Dict[str, Any]], list]] = [
     ("nl force_tool",    "POST", "/api/nl",
         {"text": "Run fabric_get_fabrics.", "force_tool": "fabric_get_fabrics",
          "force_inputs": {}, "include_raw": True}, [_ok_nl]),
-
-    # ── Agent skills (read-only investigation registry) ──────────
-    ("agent skills list", "GET", "/api/agent/skills", None, [_ok_agent_skills]),
 ]
 
 

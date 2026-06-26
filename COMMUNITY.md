@@ -45,8 +45,8 @@ in the UI. The default in `core/settings.py` is `http://127.0.0.1:8000`.
 
 **Tier-3 / Tier-4 mutation surface (gone)**
 - Plans pipeline (`plans_routes.py`, `/api/plans/*`, mutation ledger).
-- Proposal-capable agent skills (the 7 mutation skills) + the
-  approve/reject/sweep endpoints. Read-only investigation remains.
+- The entire **AI Agent Skills** subsystem (the LLM investigation engine,
+  skills, and `/api/agent/*` endpoints) — enterprise feature, removed.
 - Fabric lifecycle (add/remove/delete/destroy/deploy/clean/reconcile/RMA/
   firmware/L2-extension), RoCE (`roce_host_test*`, the RoCE UI), tenant
   create/edit/delete (EPG/VRF/port-channel).
@@ -64,10 +64,8 @@ in the UI. The default in `core/settings.py` is `http://127.0.0.1:8000`.
   deterministic regex → OpenAI → Ollama tool-pick, read-only.
 - **Tools browser** — `GET /api/tools` (live community catalog) + the
   schema-driven run form.
-- **Read-only agent investigation** — `GET /api/agent/skills` +
-  `POST /api/agent/investigate[/stream]`. 5 read-only skills:
-  fabric-health-investigation, pre-firmware-upgrade-check, pre-rma-check,
-  post-firmware-upgrade-verification, xco-health-check.
+- **Fleet + search widgets** — fabric topology diagram, fleet inventory
+  (serials + CSV export), transceiver inventory, IP/MAC search.
 - **Per-switch read widgets** + **AI Console viz blocks**.
 - **Activity Log** — `GET /api/audit`.
 - **Server Settings** — MCP base URL, Ollama, OpenAI key.
