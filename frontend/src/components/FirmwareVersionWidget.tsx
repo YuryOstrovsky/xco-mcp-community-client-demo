@@ -1,4 +1,4 @@
-// FirmwareVersionWidget — extracted from App.tsx as part of the incremental UI split.
+// FirmwareVersionWidget — renders the firmware-version tool-result payload.
 
 export function FirmwareVersionWidget({
   item,

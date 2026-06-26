@@ -1,26 +1,23 @@
 // SimpleToolResultWidgetMount — generic mount for tool-result widgets
 // that follow the canonical (items, summary, switchIp, onClose) shape.
 //
-// #162 Stage 3 — Most per-switch tool-result widgets follow an
-// identical pattern:
+// Most per-switch tool-result widgets follow an identical pattern:
 //   {open && (() => {
 //     const { items, summary, switchIp } = unwrapWidgetPayload(resp);
 //     return <SomeWidget items={items} summary={summary}
 //                        switchIp={switchIp} onClose={onClose} />;
 //   })()}
 //
-// 7 widgets in App.tsx had this exact shape (PortStats, Media,
-// IpIface, LldpNeigh, ArpTable, VlanBrief, VrfSummary). Plus
-// MaintenanceRate via extraProps for its `warnings` field. Collapsing
-// them via this helper removed ~70 lines of boilerplate from App.tsx
-// and gives us one canonical "simple unwrap → render" path.
+// Several widgets share this exact shape (PortStats, Media, IpIface,
+// LldpNeigh, ArpTable, VlanBrief, VrfSummary). Plus MaintenanceRate via
+// extraProps for its `warnings` field. Routing them through this helper
+// gives one canonical "simple unwrap → render" path.
 //
 // Widgets with custom unwrap logic keep their own dedicated mount
 // blocks in App.tsx:
 //   - Clock (fetchUptime async callback + cached uptime state)
 //   - Firmware (singular `item` instead of `items[]`)
 //   - AlarmDetails / FabricHealth (double-unwrap)
-//   - RoCE widgets (unique multi-switch + path shapes)
 //   - Tenant + EPG + FabricsHealth (custom payload paths)
 //
 // Convention: if your widget needs more than (items, summary,

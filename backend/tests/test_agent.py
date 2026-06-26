@@ -75,7 +75,7 @@ def test_extract_proposal_caps_long_desc_and_why():
     assert len(p["why"]) == 300
 
 
-# ─── extract_proposal — chained shape (skill #10) ────────────────────
+# ─── extract_proposal — chained shape ────────────────────────────────
 
 def test_extract_proposal_chained_preserves_steps():
     """A chained proposal with multiple steps keeps them in order; the

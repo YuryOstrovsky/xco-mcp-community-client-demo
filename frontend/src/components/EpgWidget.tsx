@@ -1,4 +1,4 @@
-// EpgWidget — extracted from App.tsx as part of the incremental UI split.
+// EpgWidget — renders the endpoint-group (EPG) tool-result payload.
 
 import { useState } from "react";
 import { XN } from "../lib/xnPalette";

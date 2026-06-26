@@ -71,15 +71,14 @@ def test_route_list_tenants():
     assert _match_route("list all tenants") == "tenant_get_tenants"
 
 
-# ─── ROUTES — #116 fix: mutation phrases must NOT steal read-only rules ──
-# The pre-fix bug was that `\btenants?\b` and `\bvrfs?\b` matched too greedily.
-# Typing "tenant delete" routed to tenant_get_tenants (a read list);
-# typing "delete vrfs" routed to tenant_get_vrfs. Both wrong — those
-# inputs should fall through to the LLM (or the client-side intent
-# detector that runs BEFORE /api/nl is even called).
+# ─── ROUTES — mutation phrases must NOT steal read-only rules ──
+# A greedy `\btenants?\b` / `\bvrfs?\b` rule would route "tenant delete"
+# to tenant_get_tenants (a read list) and "delete vrfs" to tenant_get_vrfs.
+# Both wrong — those inputs should fall through to the LLM (or the
+# client-side intent detector that runs BEFORE /api/nl is even called).
 
 def test_route_tenant_delete_does_not_steal_read_list():
-    """'tenant delete' must NOT route to tenant_get_tenants. #116."""
+    """'tenant delete' must NOT route to tenant_get_tenants."""
     assert _match_route("tenant delete") != "tenant_get_tenants"
     assert _match_route("delete tenant") != "tenant_get_tenants"
     assert _match_route("delete tenant lab-test") != "tenant_get_tenants"
@@ -88,7 +87,7 @@ def test_route_tenant_delete_does_not_steal_read_list():
 
 
 def test_route_delete_epg_does_not_steal_read_list():
-    """'delete epg' / 'remove epgs' must NOT route to tenant_get_all_endpoint_groups. #137."""
+    """'delete epg' / 'remove epgs' must NOT route to tenant_get_all_endpoint_groups."""
     assert _match_route("delete epg") != "tenant_get_all_endpoint_groups"
     assert _match_route("delete epgs") != "tenant_get_all_endpoint_groups"
     assert _match_route("remove epg test4-epg") != "tenant_get_all_endpoint_groups"
@@ -98,7 +97,7 @@ def test_route_delete_epg_does_not_steal_read_list():
 
 
 def test_route_read_epg_phrases_still_match():
-    """Don't over-correct — list/show EPG phrases must still route to the read tool. #137."""
+    """Don't over-correct — list/show EPG phrases must still route to the read tool."""
     assert _match_route("list epgs") == "tenant_get_all_endpoint_groups"
     assert _match_route("show all epgs") == "tenant_get_all_endpoint_groups"
     assert _match_route("display endpoint groups") == "tenant_get_all_endpoint_groups"
@@ -106,7 +105,7 @@ def test_route_read_epg_phrases_still_match():
 
 
 def test_route_delete_vrfs_does_not_steal_read_list():
-    """'delete vrfs' must NOT route to tenant_get_vrfs. #116."""
+    """'delete vrfs' must NOT route to tenant_get_vrfs."""
     assert _match_route("delete vrfs") != "tenant_get_vrfs"
     assert _match_route("delete vrf in tenant lab-a") != "tenant_get_vrfs"
     assert _match_route("remove vrfs from tenant lab-b") != "tenant_get_vrfs"
@@ -115,7 +114,7 @@ def test_route_delete_vrfs_does_not_steal_read_list():
 
 
 def test_route_read_phrases_still_match():
-    """Don't over-correct — the original read-phrases must still route. #116."""
+    """Don't over-correct — the original read-phrases must still route."""
     # Tenants — read context preserved.
     assert _match_route("list tenants") == "tenant_get_tenants"
     assert _match_route("show all tenants") == "tenant_get_tenants"
@@ -349,8 +348,7 @@ def test_switch_inventory_intent_empty():
 def test_restconf_tools_has_expected_set():
     """The RESTCONF_TOOLS set holds the tool names extract_inputs
     consults for switch_ip injection — bump this count when adding a
-    new restconf_* tool. The two RoCE/SLX tools were removed: the
-    community MCP server has no RoCE tools."""
+    new restconf_* tool."""
     assert len(RESTCONF_TOOLS) == 15
     # Spot-check a few critical ones
     assert "restconf_show_firmware_version" in RESTCONF_TOOLS

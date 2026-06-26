@@ -1,8 +1,6 @@
-// Activity Log admin panel — last 200 events from the audit stream: logins,
-// tool calls, plan lifecycle, agent runs, errors. Read-only viewer; the
+// Activity Log panel — recent events from the audit stream: tool calls,
+// agent investigations, settings changes, errors. Read-only viewer; the
 // parent owns the fetch state + reload handler.
-//
-// Extracted from App.tsx — pure presentational.
 
 import { FG, widgetContainer, btnClose, hoverClose } from "../../lib/figmaStyles";
 
@@ -33,7 +31,7 @@ export function ActivityLogPanel({ open, loading, err, records, onReload, onClos
         <div>
           <h2 style={{ margin: 0, color: FG.headingColor, fontSize: 18, fontWeight: 500 }}>Activity Log</h2>
           <p style={{ margin: "4px 0 0", color: FG.dimColor, fontSize: 14 }}>
-            Last 200 events — newest first · logins, tool calls, plan lifecycle, agent runs, errors
+            Recent events — newest first · tool calls, agent investigations, settings changes, errors
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

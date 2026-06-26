@@ -1,4 +1,4 @@
-// FabricHealthSummaryWidget — extracted from App.tsx as part of the incremental UI split.
+// FabricHealthSummaryWidget — renders the fabric-health summary tool-result payload.
 
 export function FabricHealthSummaryWidget({
   fabricName,

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions & Discussions
+    url: https://github.com/YuryOstrovsky/xco-mcp-community-client-demo/discussions
+    about: Have a question or want to discuss an idea? Start a discussion.
+  - name: Security report
+    url: https://github.com/YuryOstrovsky/xco-mcp-community-client-demo/security/advisories/new
+    about: Report a vulnerability privately (do not open a public issue).

@@ -15,10 +15,8 @@ switch_ip, etc.), pull the value out of the user's text. Two layers:
 
 Both `pick_tool_deterministic` (in main.py) and the NL endpoint's LLM
 branch call into this module to enrich tool inputs after picking the
-tool. RESTCONF_TOOLS is re-imported from nl.deterministic so we don't
+tool. RESTCONF_TOOLS is imported from nl.deterministic so we don't
 duplicate the set.
-
-Extracted from backend/main.py in task #95.
 """
 
 from __future__ import annotations

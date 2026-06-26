@@ -22,10 +22,7 @@ What does NOT live here:
     for the bare-tool-name shortcut. Stays in main.py and imports ROUTES
     + is_restconf_intent + pick_restconf_tool from this module.
   - `extract_inputs` — couples to `RESTCONF_TOOLS` (imported from here)
-    but also to a bunch of fabric/tenant entity extraction that would
-    not be cleanly separable. Stays in main.py for now.
-
-Extracted from backend/main.py in task #91.
+    but also to a bunch of fabric/tenant entity extraction.
 """
 
 from __future__ import annotations
@@ -59,23 +56,22 @@ ROUTES: List[Tuple[re.Pattern, str]] = [
     # Fleet / chassis / hardware inventory — but NOT "switch inventory" which
     # is already routed to inventory_get_switch_inventory_overview by an
     # existing route. Keep the "switch" alternative out to avoid shadowing.
-    # 2026-06-05 (#174): added reverse word order "inventory chassis [info]"
-    # / "inventory fleet" / "inventory hardware". Without this, the LLM
-    # fallback picked `inventory_get_chassis_info_bulk` for "inventory
-    # chassis info" — which requires `device_ids[]` and 400s when called
-    # without them. The bulk tool is internal-only (FleetInventoryWidget
-    # supplies device_ids after fetching them from inventory_getswitches);
-    # never call it from raw NL.
+    # Reverse word order ("inventory chassis [info]" / "inventory fleet" /
+    # "inventory hardware") is matched too. Without it, the LLM fallback
+    # picks `inventory_get_chassis_info_bulk` for "inventory chassis info" —
+    # which requires `device_ids[]` and 400s when called without them. The
+    # bulk tool is internal-only (FleetInventoryWidget supplies device_ids
+    # after fetching them from inventory_getswitches); never call it from
+    # raw NL.
     (re.compile(r"\b(fleet|chassis|hardware)\s+inventory\b", re.I), "inventory_getswitches"),
     (re.compile(r"\binventory\s+(fleet|chassis|hardware)(?:\s+(info|information|report|export))?\b", re.I), "inventory_getswitches"),
     (re.compile(r"\binventory\s+(of\s+switches|report|export)\b", re.I), "inventory_getswitches"),
 
-    # ── xco_health (Phase 1) ─────────────────────────────────────────────────
+    # ── xco_health ───────────────────────────────────────────────────────────
     # MUST come first. Without this, the LLM router happily picks
-    # `restconf_get_vrf_summary` when an operator types "is xco healthy"
-    # (real bug seen during Phase 1 testing). The matching mirror lives in
-    # App.tsx::detectXcoHealthIntent — both layers stay in sync per
-    # MEMORY: "NL routing has TWO layers — fix both".
+    # `restconf_get_vrf_summary` when an operator types "is xco healthy".
+    # The matching mirror lives in App.tsx::detectXcoHealthIntent — NL
+    # routing has TWO layers, so keep both in sync.
     # Note: this routes to `list_xco_probes` (cheap, no required args) so
     # the LLM has a non-VRF fallback path. The UI dispatch uses
     # `force_tool: run_xco_probe` + `force_inputs: {probe_name: ...}`
@@ -97,8 +93,8 @@ ROUTES: List[Tuple[re.Pattern, str]] = [
     # Composite (all tenants): any other EPG mention — verb+EPG, all/every EPG.
     # The final "bare EPG mention" alternative is anchored with `^` + a
     # negative lookahead so mutation phrases like "delete epg" / "create
-    # epg" don't get stolen for the read tool (#137). Those are caught
-    # by the client-side delete_epg / create_epg intents respectively.
+    # epg" don't get stolen for the read tool. Those are caught by the
+    # client-side delete_epg / create_epg intents respectively.
     (re.compile(
         r"\b(?:list|show|get|fetch|gather|display|find)\s+(?:(?:me|us|the)\s+)?(?:all\s+|every\s+)?(?:epgs?|endpoint[\s\-]?groups?|end[\s\-]?point[\s\-]?groups?|endpointgroups?)\b"
         r"|\b(?:all|every)\s+(?:epgs?|endpoint[\s\-]?groups?|end[\s\-]?point[\s\-]?groups?|endpointgroups?)\b"
@@ -113,8 +109,8 @@ ROUTES: List[Tuple[re.Pattern, str]] = [
     # DeleteVrfsModal); same for create. If they somehow reach this
     # server-side router, falling through to the LLM is better than
     # stealing the input for the read tool.
-    # (Fix for #116 — the bare \bvrfs?\b rule was matching "delete vrfs"
-    # and routing it to tenant_get_vrfs, an unhelpful read list.)
+    # (A bare \bvrfs?\b rule would match "delete vrfs" and route it to
+    # tenant_get_vrfs, an unhelpful read list — the lookahead prevents that.)
     # Anchored with ^ so the negative lookahead scans the full input.
     (re.compile(
         r"^(?!.*\b(?:delete|remove|drop|purge|bulk[\s\-]?delete|create|add|new)\b).*\bvrfs?\b",
@@ -123,11 +119,11 @@ ROUTES: List[Tuple[re.Pattern, str]] = [
     (re.compile(r"\btenant\s+health\b|\bhealth\s+of\s+tenants?\b", re.I), "tenant_get_health"),
     # Tenants — same pattern. Only route to the read list when the verb is
     # list/show/get/which/what — NOT delete/remove/create/add/new.
-    # Fix for #116: bare \btenants?\b previously caught "tenant delete"
-    # and routed it to tenant_get_tenants. The mutation-verb negative
-    # lookahead prevents that — those phrases either get handled
-    # client-side (delete_vrfs / create_epg / create_portchannel intents)
-    # or fall through to the LLM for proper disambiguation.
+    # A bare \btenants?\b rule would catch "tenant delete" and route it to
+    # tenant_get_tenants. The mutation-verb negative lookahead prevents
+    # that — those phrases either get handled client-side (delete_vrfs /
+    # create_epg / create_portchannel intents) or fall through to the LLM
+    # for proper disambiguation.
     (re.compile(
         r"\b(?:list|show|get|which|what|how\s+many)\s+(?:all\s+|the\s+|my\s+)?tenants?\b"
         r"|^\s*tenants?\s*\??\s*$",  # bare "tenants" or "tenants?" alone
@@ -171,6 +167,13 @@ ROUTES: List[Tuple[re.Pattern, str]] = [
     # Inventory / device health
     (re.compile(r"\b(device\s+health\s+rollup|health\s+rollup|unhealthy\s+devices?)\b", re.I), "inventory_get_device_health_rollup"),
     (re.compile(r"\bunreachable\s+devices?\b|\bdown\s+devices?\b", re.I), "inventory_get_unreachable_devices"),
+
+    # L3 routing — bare "bgp" / "show bgp" / "router bgp" / "bgp status"
+    # (fleet-wide, no switch IP) → inventory_get_router_bgp (no inputs needed).
+    # With a switch IP, the RESTCONF path (checked earlier) handles it instead.
+    # The lookaround guard avoids matching BGP inside a hyphenated name
+    # (e.g. a tenant called "BGP-LAB").
+    (re.compile(r"(?<![-\w])bgp(?![-\w])", re.I), "inventory_get_router_bgp"),
 
     # System / monitoring
     (re.compile(r"\b(system\s+healthy|is\s+the\s+system\s+healthy|ha\s+and\s+node\s+health)\b", re.I), "system_get_ha_and_node_health_summary"),
@@ -279,9 +282,9 @@ _RESTCONF_TOPIC_ROUTES: List[Tuple[re.Pattern, str]] = [
      "restconf_get_interface_all"),
     (re.compile(r"\binterface(s)?\b|\bport(s)?\b", re.I),
      "restconf_get_interface_detail"),
-    # Media / optics / transceivers — plural-aware (2026-06-05 #175 fix:
-    # "transceivers" plural didn't match bare `transceiver`, fell to LLM
-    # which picked the wrong tool). Also includes qsfp.
+    # Media / optics / transceivers — plural-aware so "transceivers" matches
+    # as well as bare "transceiver" (otherwise it falls to the LLM, which
+    # picks the wrong tool). Also includes qsfp.
     (re.compile(r"\b(optics?|transceivers?|sfp|qsfp|media|dom)\b", re.I),
      "restconf_get_media_detail"),
     # ARP

@@ -9,11 +9,6 @@
 //
 // Pure presentational: parent owns the matching logic, the dismissal
 // state, and the click handler. The chip just renders the result.
-//
-// Extracted from App.tsx — was ~85 lines of inline JSX inside the
-// render. Per CLAUDE.md: "Default to extracting. If X is more than
-// ~30 lines of JSX and isn't already inside an extracted file, it
-// belongs in its own file."
 
 interface SkillSuggestionChipProps {
   /** Matched skill config from AGENT_SKILLS (parent looks up the

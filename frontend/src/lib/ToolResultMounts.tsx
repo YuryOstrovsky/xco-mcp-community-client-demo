@@ -1,5 +1,4 @@
-// ToolResultMounts — extracted tool-result widget mount blocks
-// from App.tsx (#162 Stage 3 continued / #163).
+// ToolResultMounts — tool-result widget mount blocks.
 //
 // Each widget that follows a distinct unwrap pattern (more complex
 // than the simple {items, summary, switchIp} shape that
@@ -18,13 +17,11 @@
 //   - TenantHistoryReportWidget — onRun callback uses runNLWithText +
 //                                 openWidgetForTool + setQuickActive
 //   - BgpWidget          — 200-line inline JSX (not yet a separate
-//                          component file; #164 for componentization)
+//                          component file)
 //
-// Reference-design property: this file is a pure presentational
-// dispatcher. An operator lifting the codebase sees the routing
-// surface clearly. Adding a new complex widget = one conditional
-// block here + one prop in the props interface + one mount-table
-// entry in App.tsx.
+// This file is a pure presentational dispatcher. Adding a new complex
+// widget = one conditional block here + one prop in the props interface
+// + one mount-table entry in App.tsx.
 
 import { unwrapWidgetPayloadDouble } from "./widgetResp";
 import { AlarmDetailsWidget } from "../components/AlarmDetailsWidget";

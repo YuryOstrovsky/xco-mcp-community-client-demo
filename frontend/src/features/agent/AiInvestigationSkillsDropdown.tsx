@@ -5,8 +5,7 @@
 // turns into a status indicator with the active skill's verb + elapsed seconds.
 // Footer link opens the agent's full capability map.
 //
-// Extracted from App.tsx as the eleventh step of the incremental App split.
-// State (open/closed + click-outside-to-close) is local — no longer in App.
+// State (open/closed + click-outside-to-close) is local to this component.
 
 import { useEffect, useRef, useState } from "react";
 
@@ -24,7 +23,7 @@ export interface AiInvestigationSkillsDropdownProps {
   skills: Record<string, AgentSkillConfig>;
   /** Start a skill by its key. App owns the actual run logic. */
   runSkill: (key: string) => void;
-  /** Opens the agent's full capability map (e.g. parent's openAmbientCaps). */
+  /** Opens the agent's full capability map. */
   onShowFullSkillSet: () => void;
   /** True while a skill investigation is in progress. */
   investigateRunning: boolean;

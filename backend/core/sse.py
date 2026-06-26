@@ -1,12 +1,11 @@
 # Server-Sent Events (SSE) helpers — turn a long-running async coroutine
 # into an event stream the frontend can consume incrementally.
 #
-# Pattern factored out from /api/agent/investigate/stream (the first
-# streaming endpoint we shipped). The agent loop emits per-step events
-# (`tool_call`, `tool_result`, `thought`, …); the same shape works for:
+# Used by /api/agent/investigate/stream: the agent loop emits per-step
+# events (`tool_call`, `tool_result`, `thought`, …). The same shape works
+# for:
 #
 #   • multi-step backend flows that want to show progress
-#     (e.g. cross-fabric snapshot fan-out across sites)
 #   • watchers / loops that emit transitions
 #   • any endpoint where the operator shouldn't stare at a frozen spinner
 #

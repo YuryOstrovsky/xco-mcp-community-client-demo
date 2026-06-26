@@ -4,8 +4,6 @@
 // /api/client-settings/test-mcp and pops an alert with the result; Save
 // patches the mcp_base_url client-setting field. The community MCP server
 // needs no authentication, so there are no Client ID / Client Secret fields.
-//
-// Extracted from App.tsx as the tenth step of the incremental App split.
 
 import { type CSSProperties } from "react";
 import { postJSON } from "../../lib/api";

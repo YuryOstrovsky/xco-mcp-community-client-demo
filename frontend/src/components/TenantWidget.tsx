@@ -1,4 +1,4 @@
-// TenantWidget — extracted from App.tsx as part of the incremental UI split.
+// TenantWidget — renders the tenant tool-result payload.
 
 import { useState } from "react";
 import { XN } from "../lib/xnPalette";

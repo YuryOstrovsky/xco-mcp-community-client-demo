@@ -1,12 +1,11 @@
 // OpenAI key setter section of Client Config — canonical home for the key.
 //
-// Used by AI routing, Ambient chat, and multi-step investigations. Stored in
-// the backend runtime (no restart). The OPENAI_API_KEY env still works as a
-// seed; this section just overrides it at runtime.
+// Used by AI routing and multi-step investigations. Stored in the backend
+// runtime (no restart). The OPENAI_API_KEY env still works as a seed; this
+// section just overrides it at runtime.
 //
 // State stays in App (the AI Console reads the same openaiKey* state to show
-// its inline status indicator) and is passed in via props. Extracted from
-// App.tsx as the seventh step of the incremental App split.
+// its inline status indicator) and is passed in via props.
 
 import { type CSSProperties } from "react";
 import { postJSON } from "../../lib/api";

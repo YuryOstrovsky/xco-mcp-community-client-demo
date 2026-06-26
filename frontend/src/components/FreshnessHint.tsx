@@ -8,9 +8,6 @@
 // Sub-component because Date.now() at parent render-time would trip
 // react-hooks/purity. Updates every 30s via setInterval while mounted;
 // stops when the parent unmounts.
-//
-// Extracted from features/agent/InvestigateModal.tsx in task #93 so it
-// can be unit-tested in isolation.
 
 import { useEffect, useState } from "react";
 import { FG } from "../lib/figmaStyles";

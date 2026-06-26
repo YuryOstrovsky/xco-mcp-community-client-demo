@@ -1,7 +1,7 @@
 // frontend/src/lib/nl/detectors.test.ts
 //
-// Focused tests for detectEditTenantIntent (#185). Existing detectors
-// were tested indirectly via integration; we don't backfill those here.
+// Focused tests for detectEditTenantIntent. Existing detectors are
+// tested indirectly via integration; we don't backfill those here.
 // New detector → new test, keeping coverage proportional.
 
 import { describe, it, expect } from "vitest";
@@ -46,7 +46,7 @@ describe("detectEditTenantIntent", () => {
 
   // Plural form falls to bare-verb / picker branch — the LLM router
   // would otherwise misroute "edit tenants" to
-  // tenant_get_all_endpoint_groups. See #185 follow-up #3.
+  // tenant_get_all_endpoint_groups.
   it("matches plural 'edit tenants' with empty name", () => {
     const r = detectEditTenantIntent("edit tenants");
     expect(r.matched).toBe(true);

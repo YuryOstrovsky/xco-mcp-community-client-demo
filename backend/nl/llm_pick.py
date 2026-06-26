@@ -10,9 +10,7 @@
 # (currently 320 tools) down to ~25 before handing it to the model, so
 # the prompt size stays bounded.
 #
-# Extracted from main.py (was inline 1279-1499) per task #88.
-# OLLAMA_* config is read from env at module-import time — same
-# behavior as the previous main-module globals.
+# OLLAMA_* config is read from env at module-import time.
 
 from __future__ import annotations
 
@@ -23,7 +21,7 @@ from typing import Any, Dict, List
 
 import httpx
 
-# Ollama config — read at import time (same as the pre-extraction main.py).
+# Ollama config — read at import time.
 OLLAMA_ENABLED = (os.getenv("OLLAMA_ENABLED", "0") or "0").strip().lower() in ("1", "true", "yes", "on")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434").rstrip("/")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:3b-instruct")

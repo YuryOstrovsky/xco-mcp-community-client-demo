@@ -1,16 +1,13 @@
-# Auth — STRIPPED for the community edition.
+# Auth — no authentication.
 #
-# The community-grade MCP server requires NO authentication: no OAuth2,
-# no client-credentials token exchange, no bearer tokens, no JWT, no
-# scopes. (Its /invoke and /tools endpoints ignore an Authorization
-# header entirely.)
+# The community MCP server requires NO authentication: no OAuth2, no
+# client-credentials token exchange, no bearer tokens, no JWT, no scopes.
+# (Its /invoke and /tools endpoints ignore an Authorization header
+# entirely.)
 #
-# This module therefore keeps only no-op shims under the historical
-# names so the read-only endpoints + helpers that still reference them
-# import and type-check cleanly. NOTHING here enforces identity — there
-# is none in the community edition. The enterprise original carried a
-# TokenCache (upstream OAuth2) + an HTTPBearer-backed require_bearer +
-# JWT scope helpers; all of that is gone.
+# This module provides no-op shims so the read-only endpoints + helpers
+# that still reference them import and type-check cleanly. NOTHING here
+# enforces identity — there is none.
 
 from __future__ import annotations
 

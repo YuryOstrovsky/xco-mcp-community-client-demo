@@ -1,4 +1,4 @@
-// MediaWidget — extracted from App.tsx as part of the incremental UI split.
+// MediaWidget — renders the interface media / transceiver tool-result payload.
 
 import { useState } from "react";
 export function MediaWidget({

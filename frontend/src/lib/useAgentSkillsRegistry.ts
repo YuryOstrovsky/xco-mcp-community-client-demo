@@ -1,9 +1,7 @@
 // useAgentSkillsRegistry — one-shot fetch of the agent skill registry.
 //
-// Loaded once on mount from /api/agent/skills. Consumed by:
-//   • the NL-prompt skill-suggestion chip (keyword-tier matching)
-//   • the Agent Sweep panel's skill picker (filtered to proposal_capable)
-//   • the useSkillSuggestionLLM hook (debounced LLM fallback)
+// Loaded once on mount from /api/agent/skills. Consumed by the NL-prompt
+// skill-suggestion chip (keyword-tier matching).
 //
 // Best-effort: a fetch failure leaves the registry empty so downstream
 // consumers just don't render. Not refreshed during the session — the

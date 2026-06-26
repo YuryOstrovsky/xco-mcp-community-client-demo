@@ -1,4 +1,4 @@
-// PortStatsWidget — extracted from App.tsx as part of the incremental UI split.
+// PortStatsWidget — renders the port-statistics tool-result payload.
 
 import { useState } from "react";
 import { XN } from "../lib/xnPalette";

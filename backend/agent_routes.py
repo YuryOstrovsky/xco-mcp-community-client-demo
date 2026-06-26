@@ -1,9 +1,6 @@
-# Agent routes — read-only investigation (community edition).
+# Agent routes — read-only investigation.
 #
-# The community edition keeps ONLY the bounded, read-only investigation
-# endpoints. The enterprise mutation surface (proposal approve/reject,
-# sweep, sweep history, skill cost report, cost forecast, LLM skill
-# chooser) has been removed along with all proposal_capable skills.
+# Provides the bounded, read-only investigation endpoints.
 #
 # Endpoints provided:
 #   • GET  /api/agent/skills              — skill registry metadata
@@ -54,11 +51,6 @@ router = APIRouter()
 class InvestigateReq(BaseModel):
     query: str
     skill: str
-
-
-# Community edition: the proposal/sweep/suggest request models were removed
-# along with their (mutation-driving) endpoints. Only read-only investigation
-# remains.
 
 
 # ─── Module-level helpers ──────────────────────────────────────────────
@@ -230,13 +222,6 @@ async def agent_investigate_stream(req: InvestigateReq, token: str = Depends(req
             raise
 
     return sse_response(queue_stream(runner))
-
-
-# Community edition: the mutation-driving agent endpoints have been REMOVED —
-#   /api/agent/proposals/approve · /reject · /sweep · /sweeps ·
-#   /api/agent/skills/report · /cost-forecast · /suggest-skill.
-# Only the two read-only investigation endpoints (stream above, non-stream
-# below) and GET /api/agent/skills remain.
 
 
 @router.post("/api/agent/investigate")

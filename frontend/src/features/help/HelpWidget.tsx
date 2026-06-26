@@ -6,9 +6,7 @@
 // leaves, spines) and passes them in, then handles the click via
 // onPick(cmd).
 //
-// Extracted from App.tsx.
-//
-// #146: print / save-as-PDF support via native window.print() + a
+// Print / save-as-PDF support via native window.print() + a
 // scoped @media print stylesheet. Zero npm deps — the browser's
 // print dialog already supports "Save as PDF" on every desktop OS
 // (and iOS via the Share sheet). The Print button expands all

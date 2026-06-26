@@ -1,4 +1,4 @@
-// ClockWidget — extracted from App.tsx as part of the incremental UI split.
+// ClockWidget — renders a switch clock / NTP-sync tool-result payload.
 
 import { useState, useEffect, useMemo } from "react";
 

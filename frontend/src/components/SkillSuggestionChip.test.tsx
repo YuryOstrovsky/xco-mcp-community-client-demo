@@ -1,8 +1,7 @@
 // SkillSuggestionChip unit tests — keyword-tier + LLM-tier rendering.
 //
-// First-ever frontend Vitest tests in the project (task #89).
-// Establishes the pattern: import the component, render with controlled
-// props, assert on the visible output.
+// Pattern: import the component, render with controlled props, assert
+// on the visible output.
 
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";

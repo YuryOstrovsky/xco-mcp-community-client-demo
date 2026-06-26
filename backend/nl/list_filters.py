@@ -16,8 +16,6 @@ still needs trimming. This module:
 The natural_language endpoint runs the LLM extractor first (when enabled)
 and falls back to `extract_filter_clauses` from this module — see
 main.py's natural_language() handler.
-
-Extracted from backend/main.py in task #95.
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-// Panel — extracted from App.tsx.
+// Panel — generic titled container used to group dashboard content.
 
 import { FG, btnClose, hoverClose, widgetContainer, widgetContent, widgetHeader } from "../lib/figmaStyles";
 export function Panel({ title, subtitle, onClose, children, allowOverflow }: {

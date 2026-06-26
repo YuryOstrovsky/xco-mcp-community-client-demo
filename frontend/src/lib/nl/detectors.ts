@@ -6,17 +6,9 @@
 // widget deterministically (no LLM round-trip, no race with the
 // server's own deterministic router).
 //
-// 2026-06-06 (#184): extracted from App.tsx as the first step of the
-// modular-discipline correction. App.tsx had accumulated ~360 lines
-// of detector functions inline by #105-#182; the growth-guard's
-// per-commit threshold passed each time but the cumulative drift was
-// exactly the "I'll extract later" anti-pattern CLAUDE.md §"Lessons
-// learned" warns about. These are pure functions with no React
-// dependency — they belong in lib/.
-//
-// Each detector is mirrored on the backend in nl/deterministic.py per
-// MEMORY: "NL routing has TWO layers — fix both". If a regex changes
-// here, the matching server rule has to change too.
+// Each detector is mirrored on the backend in nl/deterministic.py:
+// NL routing has TWO layers. If a regex changes here, the matching
+// server rule has to change too.
 //
 // Detectors exported:
 //   - detectLldpIntent           — show lldp on/at/seed/perspective
@@ -174,9 +166,8 @@ export function detectSwVersionIntent(text: string): boolean {
 // "the switches in THIS fabric" when they name a fabric.
 //
 // Leading underscore is convention only — it's exported and consumed
-// by App.tsx + other detectors here. (Per CLAUDE.md "Anti-pattern #2 —
-// the leading-underscore privacy trap": underscores don't enforce
-// anything; treat them as documentation.)
+// by App.tsx + other detectors here. Underscores don't enforce
+// anything; treat them as documentation.
 export function _extractScope(text: string): { scopeName?: string; scopeIp?: string; scopeFabric?: string } {
   // Fabric scope first — explicit "fabric <name>" keyword.
   const fabricMatch = text.match(/\bfabric\s+([A-Za-z][A-Za-z0-9_-]{1,40})\b/i);
@@ -198,11 +189,11 @@ export function _extractScope(text: string): { scopeName?: string; scopeIp?: str
   //     pattern catches future bait words that aren't in our
   //     blacklist.
   //
-  // 2026-06-06 (#182): scan ALL "for/of/on/in <X>" matches, not just
-  // the first. Prompts like "what's on port 0/50 on leaf-3" have TWO
-  // "on" candidates — "port" (common-noun reject) and "leaf-3" (valid).
-  // The old single-match logic stopped at "port" → returned empty →
-  // widget probed all 8 switches instead of just leaf-3.
+  // Scan ALL "for/of/on/in <X>" matches, not just the first. Prompts
+  // like "what's on port 0/50 on leaf-3" have TWO "on" candidates —
+  // "port" (common-noun reject) and "leaf-3" (valid). Stopping at the
+  // first match would reject "port" and return empty, so the widget
+  // would probe every switch instead of just leaf-3.
   const commonNouns = /^(optics?|media|transceivers?|sfp|qsfp|switches?|fabric|fleet|inventory|serials?|parts?|numbers?|the|all|every|each|chassis|hardware|devices?|ports?|interfaces?|details?)$/i;
   const nameRe = /\b(?:for|of|on|in)\s+([A-Za-z][A-Za-z0-9_-]{1,40})\b/gi;
   let m: RegExpExecArray | null;
@@ -243,11 +234,10 @@ export function detectFleetMediaInventoryIntent(text: string): {
   // Strong signals — direct mentions of transceiver / media / optic
   // plus the "list / show" verb context. These win regardless of
   // chassis-style phrases below.
-  // 2026-06-05 (#175): include plural forms — "transceivers" /
-  // "optics". Without `transceivers?` the plural slipped past the
-  // detector and the server's LLM fallback picked
-  // inventory_get_switches_widget_table (closest name match in the
-  // catalog). Both layers mirror.
+  // Include plural forms — "transceivers" / "optics". Without
+  // `transceivers?` the plural slips past the detector and the server's
+  // LLM fallback picks inventory_get_switches_widget_table (closest name
+  // match in the catalog). Both layers mirror.
   const mediaSignal = /\b(media|transceivers?|optics?|sfp|qsfp)\b/.test(t);
   // "serial" / "part number" without an explicit "switch"/"chassis"
   // qualifier — operators mean the per-port data when they say this
@@ -260,11 +250,10 @@ export function detectFleetMediaInventoryIntent(text: string): {
   // "chassis serial" / "serial for switches" routes to the chassis
   // widget instead.
   //
-  // 2026-06-06 (#180): also catch reverse word order — "serial
-  // number(s) for/of/across switch(es)" / "part numbers for chassis"
-  // — field reported "show serial numbers for switches" was routing
-  // to media (the per-port transceiver widget), which is the wrong
-  // altitude.
+  // Also catch reverse word order — "serial number(s) for/of/across
+  // switch(es)" / "part numbers for chassis". Without it, "show serial
+  // numbers for switches" routes to media (the per-port transceiver
+  // widget), which is the wrong altitude.
   const chassisQualifier = (
     // Forward order: "chassis serial", "switch serials" (plural — s?),
     // "hardware inventory".
@@ -286,7 +275,7 @@ export function detectFleetMediaInventoryIntent(text: string): {
   return { matched: true, ..._extractScope(text) };
 }
 
-// ── Search-by-serial intent (#178) ───────────────────────────────────
+// ── Search-by-serial intent ──────────────────────────────────────────
 // Catches operator prompts like "find switch with serial 1950Q-30014"
 // / "which switch has sn FLN4318Q001" / "where is serial EXG3650A123".
 // Field requested this because support tickets often arrive with just
@@ -341,8 +330,8 @@ export function detectFleetInventoryIntent(text: string): {
   // this detector for explicit "fleet inventory" / "chassis
   // inventory" phrases that operators use when they want the full
   // sortable + exportable table.
-  // Serial/part number for switch(es) — explicit chassis context
-  // (#180). The media detector above already rejects these via its
+  // Serial/part number for switch(es) — explicit chassis context.
+  // The media detector above already rejects these via its
   // chassisQualifier gate, so they fall through to this detector.
   // Catches "show serial numbers for switches" / "serial for all
   // switches" / "part numbers for chassis" — chassis serials are
@@ -354,8 +343,8 @@ export function detectFleetInventoryIntent(text: string): {
   );
   const subject = (
     /\b(fleet|chassis|hardware)\s+inventory\b/.test(t) ||
-    // 2026-06-05 (#174): reverse word order — "inventory chassis
-    // info" / "inventory fleet" / "inventory hardware report".
+    // Reverse word order — "inventory chassis info" / "inventory
+    // fleet" / "inventory hardware report".
     // Without this, the server falls through to LLM and picks
     // inventory_get_chassis_info_bulk (which 400s without
     // device_ids). Mirrors the deterministic.py rule.
@@ -392,7 +381,7 @@ export function detectXcoHealthIntent(text: string): boolean {
 /**
  * Detect "edit tenant X" / "modify tenant X" / "configure tenant X" /
  * "update tenant X" intents and extract the tenant name. Opens the
- * TenantEditorPanel (#185).
+ * TenantEditorPanel.
  *
  * The verb set is intentionally narrow — NOT including "show",
  * "list", "delete", "create" — those go to existing tenant flows.

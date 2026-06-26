@@ -16,9 +16,6 @@ Three patterns live here:
 Plus the registry that runs them in sequence (`_TOOL_RESULT_PREPROCESSORS`),
 and two display-side helpers used at trace-render time (`_shrink_for_model`,
 `_summary_preview`).
-
-Extracted from agent/loop.py in task #92. All public symbols re-exported
-via agent/__init__.py for back-compat with any direct importer.
 """
 
 from __future__ import annotations

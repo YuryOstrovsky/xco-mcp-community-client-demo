@@ -1,4 +1,4 @@
-// VlanBriefWidget — extracted from App.tsx as part of the incremental UI split.
+// VlanBriefWidget — renders the VLAN-brief tool-result payload.
 
 import { useState } from "react";
 export function VlanBriefWidget({

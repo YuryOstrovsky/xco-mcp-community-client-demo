@@ -4,8 +4,6 @@
 // (127.0.0.1:11434 + qwen2.5:3b-instruct). When enabled, the local router
 // will prefer Ollama for free LLM calls; OpenAI is used only when Ollama
 // is off or returns nothing usable.
-//
-// Extracted from App.tsx as the ninth step of the incremental App split.
 
 import { type CSSProperties } from "react";
 

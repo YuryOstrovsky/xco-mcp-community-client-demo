@@ -1,4 +1,4 @@
-// IpIfaceWidget — extracted from App.tsx as part of the incremental UI split.
+// IpIfaceWidget — renders the IP-interface tool-result payload.
 export function IpIfaceWidget({
   items,
   summary,

@@ -1,4 +1,4 @@
-// SoftwareVersionMismatchWidget — extracted from App.tsx as part of the incremental UI split.
+// SoftwareVersionMismatchWidget — renders the software-version-mismatch tool-result payload.
 
 import { Fragment } from "react";
 

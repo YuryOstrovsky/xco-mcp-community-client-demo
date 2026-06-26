@@ -1,4 +1,4 @@
-// ArpTableWidget — extracted from App.tsx as part of the incremental UI split.
+// ArpTableWidget — renders the ARP-table tool-result payload.
 
 import { useState } from "react";
 export function ArpTableWidget({

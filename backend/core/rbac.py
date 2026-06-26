@@ -1,8 +1,7 @@
-# Role-based access checks — STRIPPED for the community edition.
+# Role-based access checks — no roles.
 #
 # The community edition has no authentication and no roles, so admin
-# gating is meaningless. `require_admin` is a no-op kept under its
-# historical name for import compatibility; every endpoint is open.
+# gating is meaningless. `require_admin` is a no-op; every endpoint is open.
 
 from __future__ import annotations
 

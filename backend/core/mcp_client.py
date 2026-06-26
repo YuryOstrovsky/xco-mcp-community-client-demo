@@ -1,12 +1,10 @@
 # Thin HTTP wrappers over the upstream MCP server (mcp_get / mcp_post /
 # mcp_put / mcp_patch / mcp_delete).
 #
-# Community edition: the upstream MCP server requires NO authentication,
-# so these send NO Authorization header. The enterprise original forwarded
-# the caller's bearer token (or a shared OAuth2 service-account token from
-# TokenCache) and retried once on 401 — all of that is gone.
+# The upstream MCP server requires NO authentication, so these send NO
+# Authorization header.
 #
-# The `token` parameter is retained (and ignored) only so the existing
+# The `token` parameter is accepted (and ignored) only so the existing
 # call sites that pass `token=token` keep working without edits.
 #
 # `invoke_tool` is NOT here — it lives in main.py because it short-circuits

@@ -1,11 +1,8 @@
 // Tiny inline Markdown renderer — handles a useful subset for agent
-// investigation reports and CrossFabricView narratives: headings, bold,
-// italics, inline code, unordered/ordered lists, paragraphs, and pipe
-// tables (with PASS/FAIL/ADVISORY/SKIP cell colouring). No heavy dep;
-// ~180 lines is easier to maintain than pulling in react-markdown.
-//
-// Extracted from App.tsx so both InvestigateModal and CrossFabricView
-// can share it without leaning on a parent-scoped function.
+// investigation reports: headings, bold, italics, inline code,
+// unordered/ordered lists, paragraphs, and pipe tables (with
+// PASS/FAIL/ADVISORY/SKIP cell colouring). No heavy dep; ~180 lines is
+// easier to maintain than pulling in react-markdown.
 
 import type { ReactNode } from "react";
 

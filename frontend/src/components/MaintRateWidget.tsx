@@ -1,4 +1,4 @@
-// MaintRateWidget — extracted from App.tsx as part of the incremental UI split.
+// MaintRateWidget — renders the maintenance-rate tool-result payload.
 
 export function MaintRateWidget({
   items,

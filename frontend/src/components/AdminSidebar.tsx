@@ -1,12 +1,10 @@
 // Admin sidebar section — foldable list of admin-only quick-action
-// buttons (Manage Users, RBAC, Webhooks, Activity Log, Audit Ledger,
-// Server Settings, XCO Sites, Client Config, Ambient Tasks, Ambient
-// Chat). Each button highlights when its modal is open.
+// buttons (e.g. Activity Log, Server Settings). The button list is
+// supplied by the parent via `items`; each button highlights when its
+// modal is open.
 //
 // Pure presentational: parent owns the per-item open flags and
 // callbacks, and the visible-to-admin gate.
-//
-// Extracted from App.tsx.
 
 import type { Dispatch, SetStateAction } from "react";
 

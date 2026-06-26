@@ -5,10 +5,10 @@ import {
 // Typed /api/invoke wrapper — opt-in alternative to postJSON where the tool
 // name is a compile-time literal. See lib/typedInvoke.ts.
 import { invokeToolTyped } from "./lib/typedInvoke";
-// NL intent detectors — pure regex classifiers extracted in #184. Each
-// runs BEFORE we ship the prompt to /api/nl so common operator phrasings
-// open the right widget deterministically. Mirrored on the backend in
-// nl/deterministic.py per MEMORY: NL routing has TWO layers.
+// NL intent detectors — pure regex classifiers. Each runs BEFORE we
+// ship the prompt to /api/nl so common operator phrasings open the right
+// widget deterministically. Mirrored on the backend in
+// nl/deterministic.py: NL routing has TWO layers.
 import {
   detectLldpIntent,
   detectSwVersionIntent,
@@ -16,14 +16,14 @@ import {
   _extractScope,
 } from "./lib/nl/detectors";
 // NL textarea + LLM-tier selector + OpenAI key config (localStorage-
-// backed). Extracted in #101 — see lib/useNlSettings.ts.
+// backed). See lib/useNlSettings.ts.
 import { useNlSettings } from "./lib/useNlSettings";
-// All Switch Clocks + NTP Sync modal state. Extracted in #101 —
-// handlers (handleOpenAllClocks + handleSubmitNtpSync) stay in App.tsx
-// because they close over App-scope helpers.
+// All Switch Clocks + NTP Sync modal state. The handlers
+// (handleOpenAllClocks + handleSubmitNtpSync) stay in App.tsx because
+// they close over App-scope helpers.
 import { useAllClocks } from "./lib/useAllClocks";
 // Interface Dashboard + Detail widget state (open flags + filter + sort
-// + detail tab). Extracted in #101.
+// + detail tab).
 import { useIfaceWidgets } from "./lib/useIfaceWidgets";
 // Agent-skill metadata: useAgentSkillsRegistry does a one-shot
 // /api/agent/skills fetch (drives the keyword-tier suggestion chip).
@@ -74,7 +74,7 @@ import { ServerSettingsPanel } from "./features/admin/ServerSettingsPanel";
 import { McpServerSection } from "./features/admin/McpServerSection";
 import { OllamaSection } from "./features/admin/OllamaSection";
 import { OpenAiKeySection } from "./features/admin/OpenAiKeySection";
-// recharts now used only by the extracted features/viz/* components.
+// recharts is used only by the features/viz/* components.
 import ReactFlow, { Background, Controls, MiniMap, type Node, type Edge } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -87,7 +87,7 @@ type NLResp = {
   error?: any;
 };
 
-// ToolDef — shared type extracted to lib/coreTypes.ts.
+// ToolDef — shared type, see lib/coreTypes.ts.
 import type { ToolDef } from "./lib/coreTypes";
 // ToolsView is lazy-loaded — it's only mounted when the operator clicks
 // into its tab. Lazy loading shrinks the initial app chunk significantly.
@@ -140,20 +140,20 @@ function pickStr(v: any): string | null {
 
 
 
-// Tiny inline Markdown renderer — extracted to lib/renderMarkdown.tsx.
+// Tiny inline Markdown renderer — see lib/renderMarkdown.tsx.
 
 // ── NL intent detectors ──────────────────────────────────────────────────────
-// Pure regex-driven classifiers extracted into lib/nl/detectors.ts (#184).
+// Pure regex-driven classifiers in lib/nl/detectors.ts.
 // Each runs BEFORE we ship the prompt to the server's NL endpoint, so common
 // operator phrasings open the right widget deterministically. Mirrored on the
-// backend in nl/deterministic.py per MEMORY: NL routing has TWO layers.
+// backend in nl/deterministic.py: NL routing has TWO layers.
 
 
 export default function App() {
   // ── Auth removed — lean community client renders the dashboard
   // unconditionally. ──
 
-  // ── NL prompt + LLM-tier + OpenAI key (#101 — see lib/useNlSettings) ──
+  // ── NL prompt + LLM-tier + OpenAI key (see lib/useNlSettings) ──
   const {
     text, setText,
     includeRaw, setIncludeRaw,
@@ -194,8 +194,8 @@ export default function App() {
   const [runningConfigOpen, setRunningConfigOpen] = useState<boolean>(false);
   const [runningConfigFullscreen, setRunningConfigFullscreen] = useState<boolean>(false);
 
-  // Interface Dashboard + Detail widgets — state moved to
-  // lib/useIfaceWidgets.ts in task #101.
+  // Interface Dashboard + Detail widgets — state lives in
+  // lib/useIfaceWidgets.ts.
   const {
     ifaceWidgetOpen, setIfaceWidgetOpen,
     ifaceFilter, setIfaceFilter,
@@ -209,8 +209,8 @@ export default function App() {
   // Clock widget
   const [clockWidgetOpen, setClockWidgetOpen] = useState<boolean>(false);
 
-  // Multi-switch clocks + NTP sync widget — state extracted to
-  // lib/useAllClocks.ts in task #101. Handlers stay in App.tsx
+  // Multi-switch clocks + NTP sync widget — state lives in
+  // lib/useAllClocks.ts. Handlers stay in App.tsx
   // (handleOpenAllClocks below + handleSubmitNtpSync).
   const {
     allClocksOpen, setAllClocksOpen,
@@ -289,10 +289,10 @@ export default function App() {
   const [adminSettingsErr, setAdminSettingsErr] = useState("");
 
   // RESTCONF / LLDP Topology (Console Quick Tools)
-  // #164 — added `fabric` so detectPlanIntent can distinguish
-  // "for <fabric-name>" trailing tokens from switch lookups. Without
-  // this, queries like "show fabric health for lab-b-alex" were
-  // mis-routed by the per-switch fallback regex and returned
+  // `fabric` lets detectPlanIntent distinguish "for <fabric-name>"
+  // trailing tokens from switch lookups. Without it, queries like
+  // "show fabric health for lab-b-alex" get mis-routed by the
+  // per-switch fallback regex and return
   // intent: ambiguous with "Switch 'lab-b-alex' not found". Source:
   // inventory_getswitches → item.fabric.fabric_name.
   const [switchOptions, setSwitchOptions] = useState<{ ip: string; name?: string | null; fabric?: string | null }[]>([]);
@@ -387,7 +387,7 @@ export default function App() {
 
 
   // Simple tab switch (no router)
-  const [activeTab, setActiveTab] = useState<"dashboard" | "console" | "tools" | "crossfabric">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "console" | "tools">("dashboard");
 
   // Light/dark theme — initial value from localStorage if present, else "dark".
   // The toggle button (top-right) flips this and adds/removes the
@@ -528,7 +528,7 @@ async function refreshSwitchOptions() {
       if (seen.has(ip)) continue;
       seen.add(ip);
       const name = pickStr(it?.name ?? it?.device_name ?? it?.hostname ?? it?.chassis_name ?? it?.model);
-      // #164 — fabric field shape from inventory_getswitches:
+      // fabric field shape from inventory_getswitches:
       //   { fabric: { fabric_name: "lab-b-alex", fabric_id: 75 } }
       // We capture just the name here; that's what detectPlanIntent
       // needs to disambiguate "for <fabric-name>" trailing tokens
@@ -1202,18 +1202,15 @@ async function randomExample() {
     } catch (err: any) { setAdminSettingsErr(err.message ?? "Failed to update"); }
   }
 
-  // #162 Stage 1 — Tool-result widget dispatch table.
+  // Tool-result widget dispatch table.
   //
-  // Replaces the old 80-line if/else chain in openWidgetForTool with a
-  // declarative table. Each entry knows its tool name, its open setter,
-  // and any extra per-widget state init (filter/sort/tab resets). The
-  // dispatcher iterates this once to close all, then finds + opens the
-  // matching entry.
+  // A declarative table for openWidgetForTool. Each entry knows its tool
+  // name, its open setter, and any extra per-widget state init
+  // (filter/sort/tab resets). The dispatcher iterates this once to close
+  // all, then finds + opens the matching entry.
   //
   // Lives inside the component body because the setters are React
-  // setState handles closed over hook scope. Stage 3 will extract the
-  // JSX mounts to a sibling component that consumes a related registry
-  // for the rendering side.
+  // setState handles closed over hook scope.
   // The setOpen type is the loose `(v: boolean) => void` rather than
   // React.Dispatch<SetStateAction<boolean>> because some setters in
   // this codebase are wrapped/normalized to that simpler shape (e.g.
@@ -1259,10 +1256,9 @@ async function randomExample() {
   ];
 
   function openWidgetForTool(tool: string) {
-    // Close ALL tier 3/4 modals + lifecycle wizards via the shared helper
-    // (plans/admin/fabric lifecycle/RMA/clean/firmware/topology/all-clocks/etc).
+    // Close ALL tier 3/4 modals + lifecycle wizards via the shared helper.
     // Without this, an open modal would stay on top of the newly-opened
-    // result widget. Bug fix for #103.
+    // result widget.
     closeAllTier3Widgets();
     // Operators who move on to another widget (NL query, quick action, or
     // any tool-result render) usually mean "I'm done with that, answer
@@ -1610,10 +1606,10 @@ async function randomExample() {
     const body: any = { query, skill: cfg.skill };
 
     try {
-      // SSE consumer extracted to lib/api.ts:streamSSE. The reusable
-      // helper is the consumer pair to backend/core/sse.py:queue_stream
-      // — together they're the reference-design pattern for any
-      // long-running tool whose progress should stream to the operator.
+      // SSE consumer lives in lib/api.ts:streamSSE. The reusable helper
+      // is the consumer pair to backend/core/sse.py:queue_stream —
+      // together they stream a long-running tool's progress to the
+      // operator.
       let gotDone = false;
       await streamSSE<any>("/api/agent/investigate/stream", body, {
         onEvent: (ev) => {
@@ -1653,10 +1649,6 @@ async function randomExample() {
       setInvestigateRunning(false);
     }
   }
-
-  // handleApproveProposal / handleRejectProposal / handleAgentSweep
-  // all moved into useAgentActions (lib/useAgentActions.ts). The
-  // hook returns them as the agentActions bundle destructured above.
 
   async function runNL() {
     const reqId = ++nlReqSeq.current;
@@ -1871,14 +1863,10 @@ async function randomExample() {
     try {
       // Resolve switch names → IPs in the text before sending to LLM.
       //
-      // #154 bug fix: previously this loop bailed on the first match
-      // (`break`), so "check roce on Leaf-1 and Leaf-3" only resolved
-      // Leaf-1 and silently dropped Leaf-3 — the backend then saw one
-      // IP and probed one switch. Now we apply every matching
-      // substitution so multi-switch queries reach the backend with
-      // ALL switches' IPs present, enabling per-switch fan-out for
-      // tools that accept a single switch_ip per call (RoCE today,
-      // others later).
+      // We apply EVERY matching substitution (not just the first) so
+      // multi-switch queries like "check Leaf-1 and Leaf-3" reach the
+      // backend with all switches' IPs present, enabling per-switch
+      // fan-out for tools that accept a single switch_ip per call.
       //
       // The leading no-IP guard is preserved so a query that already
       // contains IPs ("show clock on 10.9.140.41") doesn't get
@@ -3437,20 +3425,6 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
             >
               Tools
             </button>
-            <button
-              className="rounded-md px-3 py-1 text-sm"
-              style={{
-                background: activeTab === "crossfabric" ? "var(--accent)" : "transparent",
-                border: activeTab === "crossfabric" ? "none" : "1px solid var(--border)",
-                color: "var(--text)",
-              }}
-              onClick={() => { setQuickActive(""); setRunningConfigOpen(false); setIfaceWidgetOpen(false); setIfaceDetailWidgetOpen(false); setActiveTab("crossfabric"); }}
-            >
-              Cross-Fabric
-            </button>
-            {/* "Audit" top-nav tab removed — moved under Admin sidebar as
-                "Activity Log" since it was already admin-gated and pairs
-                naturally with the existing "Audit Ledger" entry there. */}
           </div>
         </div>
 
@@ -3935,7 +3909,7 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
   </div>
 ) : null}
 
-{/* Admin sidebar — extracted to components/AdminSidebar.tsx. */}
+{/* Admin sidebar — see components/AdminSidebar.tsx. */}
 <AdminSidebar
   visible={true}
   collapsed={sidebarAdminCollapsed}
@@ -4314,7 +4288,7 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
 })()}
 
 {/* ── Running-config CLI Widget ─────────────────────────────────── */}
-{/* Running Config — extracted to features/widgets/RunningConfigWidget.tsx. */}
+{/* Running Config — see features/widgets/RunningConfigWidget.tsx. */}
 <RunningConfigWidget
   open={runningConfigOpen}
   raw={resp?.raw}
@@ -4324,7 +4298,7 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
 />
 
 {/* ── Interface Detail Widget ─────────────────────────────────── */}
-{/* Interface Detail — extracted to features/widgets/IfaceDetailWidget.tsx. */}
+{/* Interface Detail — see features/widgets/IfaceDetailWidget.tsx. */}
 <IfaceDetailWidget
   open={ifaceDetailWidgetOpen}
   raw={resp?.raw}
@@ -4339,7 +4313,7 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
 />
 
 {/* ── Interface Status Widget ─────────────────────────────────── */}
-{/* Interface Status — extracted to features/widgets/IfaceWidget.tsx. */}
+{/* Interface Status — see features/widgets/IfaceWidget.tsx. */}
 <IfaceWidget
   open={ifaceWidgetOpen}
   raw={resp?.raw}
@@ -4384,7 +4358,7 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
 })()}
 
 {/* ── All Switch Clocks + NTP Sync Widget (Figma: All_clock_widget) ── */}
-{/* All Switch Clocks — extracted to features/widgets/AllClocksModal.tsx. */}
+{/* All Switch Clocks — see features/widgets/AllClocksModal.tsx. */}
 <AllClocksModal
   open={allClocksOpen}
   loading={allClocksLoading}
@@ -4399,9 +4373,9 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
   onClose={() => setAllClocksOpen(false)}
 />
 
-{/* #162 Stage 3 — 7 simple-shape mounts collapsed via SimpleToolResultWidgetMount.
-    All follow the {items, summary, switchIp, onClose} pattern; the helper
-    handles unwrap + render. Adding a new simple widget = 1 line here. */}
+{/* Simple-shape mounts via SimpleToolResultWidgetMount. All follow the
+    {items, summary, switchIp, onClose} pattern; the helper handles unwrap
+    + render. Adding a new simple widget = 1 line here. */}
 <SimpleToolResultWidgetMount open={portStatsWidgetOpen} resp={resp} Widget={PortStatsWidget} onClose={() => setPortStatsWidgetOpen(false)} />
 <SimpleToolResultWidgetMount open={mediaWidgetOpen} resp={resp} Widget={MediaWidget} onClose={() => setMediaWidgetOpen(false)} />
 
@@ -4433,10 +4407,8 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
   );
 })()}
 
-{/* #163 — 9 tool-result widget mounts extracted to lib/ToolResultMounts.tsx.
-    Parent owns the state; child just renders the matching one. SwVer is
-    further down in the file and gets added to this block in a follow-up
-    edit. */}
+{/* Tool-result widget mounts — see lib/ToolResultMounts.tsx.
+    Parent owns the state; child just renders the matching one. */}
 <ToolResultMounts
   resp={resp}
   swVerWidgetOpen={swVerWidgetOpen}
@@ -4491,7 +4463,7 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
   );
 })()}
 
-{/* SwVer extracted to ToolResultMounts.tsx (above). */}
+{/* SwVer is rendered by ToolResultMounts.tsx (above). */}
 
 {/* ── BGP Summary Widget ────────────────────────────────────────────── */}
 {bgpWidgetOpen && bgpWidgetData && (() => {
@@ -4615,7 +4587,7 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
 })()}
 
 {/* ── Per-skill Input Prompt (e.g. Pre-RMA needs a failed-switch IP) ──── */}
-{/* Skill input prompt — extracted to features/agent/SkillPromptModal.tsx. */}
+{/* Skill input prompt — see features/agent/SkillPromptModal.tsx. */}
 <SkillPromptModal
   open={skillPromptOpen}
   config={(AGENT_SKILLS[skillPromptSkillKey] as any) ?? null}
@@ -4635,7 +4607,7 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
 
 
 {/* ── Investigate (agent skill) result panel ──────────────────────────── */}
-{/* AI Agent Investigate — extracted to features/agent/InvestigateModal.tsx. */}
+{/* AI Agent Investigate — see features/agent/InvestigateModal.tsx. */}
 <InvestigateModal
   open={investigateOpen}
   title={(() => {
@@ -4657,7 +4629,7 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
 />
 
 {/* ── Help / Capabilities Widget (Figma-styled modal) ──────────────── */}
-{/* Natural Language Examples (Help) — extracted to features/help/HelpWidget.tsx. */}
+{/* Natural Language Examples (Help) — see features/help/HelpWidget.tsx. */}
 <HelpWidget
   open={helpWidgetOpen}
   expandedCats={helpExpandedCats}
@@ -4679,7 +4651,7 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
 />
 
 {/* ── Switch Picker Widget ───────────────────────────────────────────── */}
-{/* Switch Picker — extracted to components/SwitchPickerModal.tsx. */}
+{/* Switch Picker — see components/SwitchPickerModal.tsx. */}
 <SwitchPickerModal
   open={switchPickerOpen}
   title={switchPickerTitle}
@@ -4692,7 +4664,7 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
 {/* Replaces the former top-nav "Audit" tab. Same data source (/api/audit
     via loadAudit), now wrapped in the standard admin-widget chrome so it
     sits naturally next to Audit Ledger in the Admin sidebar. */}
-{/* Activity Log — extracted to features/admin/ActivityLogPanel.tsx. */}
+{/* Activity Log — see features/admin/ActivityLogPanel.tsx. */}
 <ActivityLogPanel
   open={adminActivityOpen}
   loading={auditLoading}
@@ -4703,7 +4675,7 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
 />
 
 {/* ── Admin: Server Settings ──────────────────────────────────────────── */}
-{/* Server Settings — extracted to features/admin/ServerSettingsPanel.tsx.
+{/* Server Settings — see features/admin/ServerSettingsPanel.tsx.
     Composes the MCP-server / Ollama / OpenAI-key config sections so this
     panel is the single home for client configuration. */}
 <ServerSettingsPanel
@@ -4910,16 +4882,14 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
               placeholder="Type a natural-language request…"
             />
 
-            {/* SkillSuggestionChip — extracted to components/SkillSuggestionChip.tsx.
+            {/* SkillSuggestionChip — see components/SkillSuggestionChip.tsx.
                 Matching logic kept here (parent owns the registry + dismissal
                 state); chip component is presentational. */}
             {(() => {
               const lower = text.trim().toLowerCase();
               if (!lower || lower === skillChipDismissedFor.toLowerCase()) return null;
               if (agentSkillsRegistry.length === 0) return null;
-              // Keyword-tier (client-side) match only. The LLM-tier
-              // suggestion fallback was removed with the community strip
-              // (its /api/agent/suggest-skill endpoint is gone).
+              // Keyword-tier (client-side) match only.
               const matched = agentSkillsRegistry.find((s) =>
                 s.trigger_keywords.some((kw) => lower.includes(kw.toLowerCase()))
               );
@@ -4982,7 +4952,7 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
               </button>
             </div>
 
-            {/* AI Investigation Skills dropdown — extracted to features/agent/AiInvestigationSkillsDropdown.tsx. */}
+            {/* AI Investigation Skills dropdown — see features/agent/AiInvestigationSkillsDropdown.tsx. */}
             <AiInvestigationSkillsDropdown
               skills={AGENT_SKILLS}
               runSkill={(k) => runAgentSkill(k as AgentSkillKey)}
@@ -5111,73 +5081,3 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
     </div>
   );
 }
-
-// ── LLDP Neighbor Detail Widget ───────────────────────────────────────────────
-// LldpNeighWidget moved to components/LldpNeighWidget.tsx
-
-// ── Port Statistics Widget ────────────────────────────────────────────────────
-
-// ── ARP Table Widget ──────────────────────────────────────────────────────
-// ArpTableWidget moved to components/ArpTableWidget.tsx
-
-// ── IP Interface Widget ────────────────────────────────────────────────────
-// IpIfaceWidget moved to components/IpIfaceWidget.tsx
-
-// XN design tokens moved to lib/xnPalette.ts (shared by widget files).
-
-// PortStatsWidget moved to components/PortStatsWidget.tsx
-
-// ── Media / Transceiver Widget ───────────────────────────────────────────────
-
-// MediaWidget moved to components/MediaWidget.tsx
-
-// ── Copy Button with "Copied!" feedback ──────────────────────────────────────
-
-// CopyButton moved to components/CopyButton.tsx
-
-// ── Mini Clock Card (for All Switch Clocks grid) ────────────────────────────
-
-// MiniClockCard moved to components/MiniClockCard.tsx
-
-// ── Clock Widget ─────────────────────────────────────────────────────────────
-
-// ClockWidget moved to components/ClockWidget.tsx
-
-// ── Firmware Version Widget ───────────────────────────────────────────────────
-// FirmwareVersionWidget moved to components/FirmwareVersionWidget.tsx
-
-// ── Monitor Health Widget ──────────────────────────────────────────────────────
-// MonitorHealthWidget moved to components/MonitorHealthWidget.tsx
-
-// ── Fabric Health Summary Widget ──────────────────────────────────────────────
-// FabricHealthSummaryWidget moved to components/FabricHealthSummaryWidget.tsx
-
-// ── Fabrics Health Widget (Figma Fabric_Health) ──────────────────────────────
-// FabricsHealthWidget moved to components/FabricsHealthWidget.tsx
-
-// ── VLAN Brief Widget ─────────────────────────────────────────────────────────
-// VlanBriefWidget moved to components/VlanBriefWidget.tsx
-
-// ── VRF Summary Widget ────────────────────────────────────────────────────────
-// VrfSummaryWidget moved to components/VrfSummaryWidget.tsx
-
-// ── Maintenance Rate Monitoring Widget ────────────────────────────────────────
-// MaintRateWidget moved to components/MaintRateWidget.tsx
-
-// ── EPG Widget ────────────────────────────────────────────────────────────────
-// EpgWidget moved to components/EpgWidget.tsx
-
-// ── Tenant Widget ─────────────────────────────────────────────────────────────
-// TenantWidget moved to components/TenantWidget.tsx
-
-// ── Alarm Details with Context Widget ────────────────────────────────────────
-// AlarmDetailsWidget moved to components/AlarmDetailsWidget.tsx
-
-// TenantHistoryReportWidget moved to components/TenantHistoryReportWidget.tsx
-
-// Panel moved to components/Panel.tsx
-
-// Card moved to components/Card.tsx
-
-// ── Software Version Mismatch Widget ──────────────────────────────────────────
-// SoftwareVersionMismatchWidget moved to components/SoftwareVersionMismatchWidget.tsx

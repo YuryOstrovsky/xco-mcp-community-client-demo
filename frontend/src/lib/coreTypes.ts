@@ -1,6 +1,6 @@
 // Shared cross-module types — types that need to be referenced from
-// both App.tsx and the extracted feature/view files. Lives in lib/ to
-// avoid circular imports.
+// both App.tsx and the feature/view files. Lives in lib/ to avoid
+// circular imports.
 
 export type ToolDef = {
   name: string;

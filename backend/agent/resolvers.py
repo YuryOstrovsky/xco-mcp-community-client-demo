@@ -23,9 +23,6 @@ Three resolvers ship today:
 
 The registry `_PRE_LOOP_HOOKS` maps skill name → resolver; the loop reads
 this dict by skill name and calls the registered hook if present.
-
-Extracted from agent/loop.py in task #92. All public symbols re-exported
-via agent/__init__.py for back-compat with any direct importer.
 """
 
 from __future__ import annotations

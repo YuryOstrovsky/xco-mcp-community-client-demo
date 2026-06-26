@@ -5,9 +5,8 @@
 # can be updated at runtime via PATCH /api/client-settings — readers always
 # see the freshest value because they read the same dict.
 #
-# Community edition: there are NO authentication credentials and none of the
-# enterprise ambient / health-watcher / RoCE / Twilio / Telegram knobs — the
-# config is just the MCP server URL plus optional Ollama settings.
+# There are NO authentication credentials — the config is just the MCP
+# server URL plus optional Ollama settings.
 #
 # Persistence: PATCH writes through to client_settings.json so settings
 # survive container restarts. Env vars are the SEED used on a fresh

@@ -1,4 +1,4 @@
-// MonitorHealthWidget — extracted from App.tsx as part of the incremental UI split.
+// MonitorHealthWidget — renders the monitor-health tool-result payload.
 export function MonitorHealthWidget({
   items,
   host,

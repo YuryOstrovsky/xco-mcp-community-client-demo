@@ -1,4 +1,4 @@
-// LldpNeighWidget — extracted from App.tsx as part of the incremental UI split.
+// LldpNeighWidget — renders the LLDP-neighbors tool-result payload.
 
 import { useState } from "react";
 export function LldpNeighWidget({

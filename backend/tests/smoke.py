@@ -6,13 +6,10 @@ Run after every service restart that involved a refactor:
     cd backend && BASE_URL=http://127.0.0.1:5174 .venv/bin/python -m tests.smoke
 
 The community client has NO authentication — there is no token to mint and
-no Authorization header is sent. (The enterprise original minted a
-service-account token via core.auth.token_cache and asserted no-auth gates;
-both are gone.)
+no Authorization header is sent.
 
-Catches regressions like the OPENAI_MODEL NameError that escaped
-/api/health-only verification because the bug only fired on the /api/nl
-branch.
+Catches regressions that escape /api/health-only verification — e.g. a
+fault that only fires on the /api/nl branch.
 
 Exit code 0 = all green; non-zero = at least one failure. Designed to run
 in <10s. Requires the community backend running and pointed at a reachable

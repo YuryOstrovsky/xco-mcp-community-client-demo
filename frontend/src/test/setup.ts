@@ -3,6 +3,6 @@
 // Imports jest-dom matchers (toBeInTheDocument, toHaveTextContent,
 // etc.) and attaches them to Vitest's expect.
 //
-// Loaded via vite.config.ts `test.setupFiles`. See task #89.
+// Loaded via vite.config.ts `test.setupFiles`.
 
 import "@testing-library/jest-dom/vitest";

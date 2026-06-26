@@ -1,4 +1,4 @@
-// FabricsHealthWidget — extracted from App.tsx as part of the incremental UI split.
+// FabricsHealthWidget — renders the per-fabric health tool-result payload.
 
 import { useState } from "react";
 export function FabricsHealthWidget({

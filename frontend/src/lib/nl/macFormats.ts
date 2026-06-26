@@ -1,9 +1,7 @@
 // frontend/src/lib/nl/macFormats.ts
 //
-// Single source of truth for MAC-address format detection. Same regex
-// set was previously duplicated between App.tsx's compass NL handler
-// and IpMacSearchWidget's auto-classify. #184/3 dedupes both onto
-// these constants.
+// Single source of truth for MAC-address format detection, shared by
+// App.tsx's compass NL handler and IpMacSearchWidget's auto-classify.
 //
 // Accepted forms (all case-insensitive):
 //   - colon         "aa:bb:cc:dd:ee:ff"

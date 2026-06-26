@@ -1,8 +1,7 @@
 """Proposal extraction — pulls the structured ```proposal``` JSON block
 out of a proposal_capable skill's synthesis and normalizes it to
-always carry a `steps[]` list. Single-step proposals (skills #5-#9)
-and chained proposals (skill #10+) both come out of this with the
-same downstream shape.
+always carry a `steps[]` list. Single-step and chained proposals both
+come out of this with the same downstream shape.
 
 Public surface:
   extract_proposal(synthesis) → dict | None
@@ -30,9 +29,7 @@ from typing import Any, Dict, List, Optional, Tuple
 #   {"reason": "..."}
 #   ```
 #
-# The host passes the extracted dict to the operator approval UI; on
-# approval, it goes through mutation_gate.execute_confirmed_mutation
-# (which uses the Plans flow — same path chat-confirmed mutations take).
+# The host passes the extracted dict to the operator approval UI.
 
 _PROPOSAL_BLOCK_RE = re.compile(
     r"```proposal\s*\n(\{.*?\})\s*\n```",
@@ -46,14 +43,14 @@ def extract_proposal(synthesis: str) -> Optional[Dict[str, Any]]:
     Refused proposals return None — the synthesis text still surfaces the reason.
 
     Accepts two shapes:
-      1. Single-step (skills #5-#9): {tool, inputs, rollback, desc, why, risk}
-      2. Chained (skill #10+): {steps: [{tool, inputs, ...}], desc, why, risk}
+      1. Single-step: {tool, inputs, rollback, desc, why, risk}
+      2. Chained: {steps: [{tool, inputs, ...}], desc, why, risk}
 
     For uniformity downstream, both shapes get NORMALIZED to always carry a
     steps list — a single-step proposal becomes one-element steps. The
-    original top-level tool/inputs are preserved for back-compat with the
-    existing ProposalCard rendering (which still reads them) and approve
-    endpoint (which prefers steps when present)."""
+    original top-level tool/inputs are preserved so the ProposalCard
+    rendering (which still reads them) and the approve endpoint (which
+    prefers steps when present) both keep working."""
     if not synthesis:
         return None
     m = _PROPOSAL_BLOCK_RE.search(synthesis)

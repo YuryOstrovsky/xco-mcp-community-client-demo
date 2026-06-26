@@ -1,4 +1,4 @@
-// TenantHistoryReportWidget — extracted from App.tsx as part of the incremental UI split.
+// TenantHistoryReportWidget — renders the tenant-history report tool-result payload.
 
 import { useState, useEffect, useRef } from "react";
 export function TenantHistoryReportWidget({

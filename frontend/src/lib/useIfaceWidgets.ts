@@ -8,11 +8,8 @@
 // Bundling into one hook because the two widgets are always wired
 // together — they're effectively two views of the same data.
 //
-// State-only (App.tsx pattern). The fetch handlers and the open/close
-// callbacks stay in App.tsx because they close over App-scope helpers
-// (switchOptions, etc).
-//
-// Extracted from App.tsx in task #101 (Phase E).
+// State-only. The fetch handlers and the open/close callbacks stay in
+// App.tsx because they close over App-scope helpers (switchOptions, etc).
 
 import { useState } from "react";
 

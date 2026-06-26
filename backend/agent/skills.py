@@ -15,8 +15,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 # ── Skill loader ──────────────────────────────────────────────────────────────
 # Skill files live at backend/agent_skills/ — SIBLING of the agent/
-# package, not a child. Anchor on parent.parent so this path stays
-# correct after the agent.py → agent/ split (task #86).
+# package, not a child. Anchor on parent.parent so this path stays correct.
 _SKILLS_DIR = Path(__file__).resolve().parent.parent / "agent_skills"
 
 

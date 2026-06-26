@@ -46,7 +46,6 @@ TOOL_CALL_TIMEOUT_S = 30
 LLM_TIMEOUT_S = 60
 
 
-# Skill loader extracted to agent/skills.py.
 from .skills import _SKILLS_DIR, _SKILL_CACHE, _parse_frontmatter, load_skill, list_skills  # noqa: F401
 
 
@@ -56,10 +55,9 @@ from .skills import _SKILLS_DIR, _SKILL_CACHE, _parse_frontmatter, load_skill, l
 # pass through the dict; the host validates server-side.
 
 # ── Live tool catalog (auto-derived from MCP server /api/tools) ─────────────
-# Catalog fetch + JSON-Schema → OpenAI-function-spec projection moved to
+# Catalog fetch + JSON-Schema → OpenAI-function-spec projection live in
 # core/tool_catalog.py so other callers (admin tools UI, schema-driven
-# input forms) can share the cache. Re-exported under the historical
-# private names so existing call sites in this file don't churn.
+# input forms) can share the cache.
 from core.tool_catalog import (
     get_tool_catalog,
     project_to_openai_spec as _project_to_openai_spec,
@@ -260,8 +258,8 @@ def _tools_for_skill_fallback(skill: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 
 # ── Per-skill pre-loop hooks ────────────────────────────────────────────────
-# Extracted to agent/resolvers.py in task #92 — target discovery, MCT-partner
-# detection, RESTCONF reachability probes, hardware-fingerprint comparison.
+# agent/resolvers.py — target discovery, MCT-partner detection, RESTCONF
+# reachability probes, hardware-fingerprint comparison.
 from .resolvers import (  # noqa: F401
     _extract_fabric_names,
     _extract_switches_per_fabric,
@@ -274,7 +272,6 @@ from .resolvers import (  # noqa: F401
 
 
 # ── Post-synthesis verdict validation ────────────────────────────────────────
-# Extracted to agent/verdict.py in task #92.
 from .verdict import (  # noqa: F401
     _CHECKLIST_ROW_RE,
     _extract_synthesis_check_verdicts,
@@ -820,7 +817,6 @@ async def run_investigation(
     }
 
 
-# Proposal extraction extracted to agent/proposal.py.
 from .proposal import _PROPOSAL_BLOCK_RE, extract_proposal  # noqa: F401
 
 
@@ -831,9 +827,9 @@ async def _bounded(coro, seconds: int):
 
 
 # ── Tool-result filters / preprocessors ──────────────────────────────────────
-# Extracted to agent/filters.py in task #92 — see that module for the alarm
-# stripping, BGP normalizer, firmware-storage verdict injector, and the
-# `_TOOL_RESULT_PREPROCESSORS` registry the loop walks for each tool call.
+# agent/filters.py holds the alarm stripping, BGP normalizer, firmware-storage
+# verdict injector, and the `_TOOL_RESULT_PREPROCESSORS` registry the loop
+# walks for each tool call.
 from .filters import (  # noqa: F401
     _RESOLVED_ALARM_PATTERNS,
     _is_resolved_alarm_message,

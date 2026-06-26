@@ -1,4 +1,4 @@
-// Card — extracted from App.tsx.
+// Card — small titled value card used across dashboard panels.
 export function Card({ title, value }: { title: string; value: string }) {
   return (
     <div

@@ -1,4 +1,4 @@
-// VrfSummaryWidget — extracted from App.tsx as part of the incremental UI split.
+// VrfSummaryWidget — renders the VRF-summary tool-result payload.
 
 export function VrfSummaryWidget({
   items,

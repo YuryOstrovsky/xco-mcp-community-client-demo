@@ -20,10 +20,6 @@ Three classes of mismatch are detected:
   3. Skill #1 specifically: Summary asserts active critical/degraded state
      when alarms are all_stale (must use "appears healthy + pre-existing"
      phrasing instead).
-
-Extracted from agent/loop.py in the task #92 split. All public symbols are
-re-exported via agent/__init__.py for back-compat with any caller that
-imported them from `agent` directly.
 """
 
 from __future__ import annotations

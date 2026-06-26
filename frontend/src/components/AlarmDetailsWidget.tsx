@@ -1,4 +1,4 @@
-// AlarmDetailsWidget — extracted from App.tsx as part of the incremental UI split.
+// AlarmDetailsWidget — renders the alarm-details tool-result payload.
 
 import { useState } from "react";
 export function AlarmDetailsWidget({

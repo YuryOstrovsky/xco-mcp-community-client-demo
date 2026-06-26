@@ -12,10 +12,8 @@
 //   - `openaiKeySet` / `openaiKeySaving`: backend-side state mirror
 //     (whether the backend currently has a key + spinner during save)
 //
-// Pattern mirrors lib/useAuthSession, lib/useAgentActions, etc. — App.tsx
-// calls `useNlSettings()` once and destructures everything it needs.
-//
-// Extracted from App.tsx in task #101 (Phase E).
+// App.tsx calls `useNlSettings()` once and destructures everything it
+// needs.
 
 import { useEffect, useState } from "react";
 import { postJSON } from "./api";

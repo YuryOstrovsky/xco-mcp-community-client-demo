@@ -1,14 +1,11 @@
 // lib/widgetPrimitives.tsx — small reusable React primitives for the
-// "readiness-style" inline result widgets (RoCE QoS, RoCE Path, future
-// xco_health detail, etc.).
+// "readiness-style" inline result widgets.
 //
-// 2026-06-05: created in response to user gut-check that the recent
-// RoCE widgets had drifted into a "traffic light / student grade" look
-// — bright #86efac / #fca5a5 / #fde68a chips, hand-rolled tables,
-// fullscreen modal wrappers. The reference style was the Inventory
-// viz block (rendered via <Panel>) plus FabricHealthSummary /
-// FleetInventory: muted tokens, FG.* design-system colors, inline
-// rendering in the AI Console.
+// The reference style is the Inventory viz block (rendered via <Panel>)
+// plus FabricHealthSummary / FleetInventory: muted tokens, FG.*
+// design-system colors, inline rendering in the AI Console — not a
+// "traffic light / student grade" look (bright chips, hand-rolled
+// tables, fullscreen modal wrappers).
 //
 // What this file provides — all using design-system tokens from
 // figmaStyles, never raw hex / Tailwind-300 / ad-hoc rgba:
@@ -24,7 +21,7 @@
 //   sectionLabel          — small uppercase muted label above sub-blocks
 //
 // Anti-goals (do not add here):
-//   - Domain logic ("classify a RoCE finding by name"). Belongs in the
+//   - Domain logic ("classify a finding by name"). Belongs in the
 //     widget — the primitive takes a `tone` already classified.
 //   - Modal wrappers. Result widgets render inline via <Panel>; modals
 //     are tier-3 ops with their own (different) chrome.
@@ -64,11 +61,10 @@ export function tonePalette(tone: ToneKey): { fg: string; bg: string; border: st
 
 /** Pill / chip — neutral surface with a small colored dot indicating
  *  tone, plus the label text. Mirrors the FabricHealthSummary KPI-card
- *  pattern (small 6px dot + plain text on a neutral bg), NOT the
- *  high-saturation traffic-light Tailwind 300s the RoCE widgets used
- *  before #168/#170. The dot carries the status; the surface stays
- *  visually restrained so a row of chips reads as data, not as a
- *  dashboard light show.
+ *  pattern (small 6px dot + plain text on a neutral bg), NOT a
+ *  high-saturation traffic-light style. The dot carries the status; the
+ *  surface stays visually restrained so a row of chips reads as data,
+ *  not as a dashboard light show.
  *
  *  Example: <Chip tone="good" label="MTU" help="≥9000 on all endpoints" /> */
 export function Chip({ label, tone, help, dot = true }: {

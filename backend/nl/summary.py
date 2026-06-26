@@ -22,8 +22,6 @@ Three sources are combined:
 Plus a per-tool enrichment hook — currently only the fabric-health
 tools get one (surface unhealthy_count as a KPI, synthesize friendly
 next-action suggestions when the tool didn't provide any).
-
-Extracted from backend/main.py in task #95.
 """
 
 from __future__ import annotations

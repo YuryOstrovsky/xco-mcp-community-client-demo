@@ -60,3 +60,11 @@ jobs:
         run: npm run build
       - name: Unit tests (Vitest)
         run: npm test
+
+  docker:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image (no push)
+        run: docker build -t xco-mcp-client-community:ci .

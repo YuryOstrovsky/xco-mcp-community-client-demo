@@ -24,11 +24,9 @@ from pathlib import Path
 # Load .env from this backend directory (stable regardless of CWD)
 load_dotenv(dotenv_path=Path(__file__).with_name(".env"), override=False)
 
-# MCP base URL + the `_client_config` runtime dict + persist helpers moved
-# to core.settings. _client_config is THE single source of truth for
-# runtime-updatable backend config (MCP URL + Ollama) — a PATCH lands
-# everywhere at once.
-from core.settings import (  # noqa: F401  (re-export for legacy callers)
+# `_client_config` is THE single source of truth for runtime-updatable
+# backend config (MCP URL + Ollama) — a PATCH lands everywhere at once.
+from core.settings import (  # noqa: F401
     MCP_BASE_URL,
     _client_config,
     load_persisted_client_settings as _load_persisted_client_settings,
@@ -36,18 +34,16 @@ from core.settings import (  # noqa: F401  (re-export for legacy callers)
 )
 
 # ── Audit log ─────────────────────────────────────────────────────────────────
-# AUDIT_LOG_PATH moved to core.paths so every module that needs to read/write
-# under the same volume mount lands on the same path. Re-exported here as a
-# module-level name so existing call sites keep working.
+# AUDIT_LOG_PATH lives in core.paths so every module that reads/writes under
+# the same volume mount lands on the same path.
 # (Service starts uvicorn from backend/ — top-level module loads, NOT
 # a package, so we use absolute imports from sibling dirs, not `from .core`.)
 from core.paths import AUDIT_LOG_PATH, CLIENT_SETTINGS_PATH, OPENAI_USAGE_LOG_PATH
 
 # ── OpenAI usage log (for cost tracking) ─────────────────────────────────────
-# JSONL log + price table + aggregator moved to core.openai_usage so the
+# JSONL log + price table + aggregator live in core.openai_usage so the
 # daily-cost-cap check (later in this file) and the cost-tracking section
-# call the same code. Re-exported under the historical underscore names
-# so existing call sites in this file keep working without churn.
+# call the same code.
 from core.openai_usage import (
     OPENAI_PRICING_USD_PER_1M,
     price_for_model as _price_for_model,
@@ -57,9 +53,8 @@ from core.openai_usage import (
     skill_month_cost_usd as _skill_month_cost_usd,
 )
 
-# Audit log + non-audit logger moved to core.audit. The audit handler is
-# attached at import time inside that module, so importing it is enough
-# to install the JSONL FileHandler on the `mcp.audit` logger.
+# The audit handler is attached at import time inside core.audit, so importing
+# it is enough to install the JSONL FileHandler on the `mcp.audit` logger.
 from core.audit import audit_log as _audit_log, logger, audit as _audit  # noqa: F401
 
 
@@ -69,18 +64,12 @@ OLLAMA_MODEL = (os.getenv("OLLAMA_MODEL", "qwen2.5:3b-instruct") or "qwen2.5:3b-
 OLLAMA_ENABLED = (os.getenv("OLLAMA_ENABLED", "0") or "0").strip().lower() in ("1", "true", "yes", "on")
 
 # Optional cloud LLM via OpenAI-compatible API.
-# OPENAI_* constants + the runtime key state + the chat helpers all moved
-# to core.llm. We import the module (not the names) so callers in main.py
+# OPENAI_* constants + the runtime key state + the chat helpers live in
+# core.llm. We import the module (not the names) so callers in main.py
 # must write `_llm.OPENAI_MODEL` explicitly — that's the single source of
-# truth and always reflects the current runtime value.
-#
-# A previous version of this section re-exported `OPENAI_API_KEY` /
-# `OPENAI_BASE_URL` at module level and used PEP 562 `__getattr__` to
-# resolve `OPENAI_MODEL` on attribute access. The PEP 562 trick only
-# catches EXTERNAL access (`main.OPENAI_MODEL`); bare-name lookups INSIDE
-# main.py silently raised NameError, which the /api/nl handler swallowed
-# into resp.error. Bug went live for 45 minutes. Lesson: explicit imports
-# beat clever shims; keep this `import as _llm` form and force the prefix.
+# truth and always reflects the current runtime value. (Re-exporting the
+# names at module level would let a runtime key change go unseen by bare-name
+# lookups inside main.py — keep the `_llm.` prefix.)
 import core.llm as _llm
 
 # Optional: let Ollama extract structured list filters ("Option 4").
@@ -100,9 +89,7 @@ _BACKEND_DIR = Path(__file__).resolve().parent
 FRONTEND_DIST = str((_BACKEND_DIR.parent / "frontend" / "dist").resolve())
 
 # ── Mounted feature routers ──────────────────────────────────────────
-# Community edition: the cross-fabric fleet dashboard, plans pipeline,
-# RoCE, health-watcher and ambient-agent routers have all been stripped.
-# Only the read-only agent investigation router (wired below) remains.
+# The read-only agent investigation router is wired below.
 
 
 # -----------------------------
@@ -124,18 +111,14 @@ class NLReq(BaseModel):
 
 
 # InvestigateReq + the other agent request models live with their
-# endpoints in backend/agent_routes.py — extracted as part of the
-# de-monolithication pass (task #71). Kept here previously because
-# the agent endpoints used to live in main.py.
+# endpoints in backend/agent_routes.py.
 
 
 # -----------------------------
-# Auth — STRIPPED (community edition has no authentication).
+# Auth — the community edition has no authentication.
 # -----------------------------
-# core.auth now holds no-op shims under the historical names. `require_bearer`
-# is a no-op dependency (no token required); the JWT/scope helpers return
-# empty/identity values. Re-exported here so existing call sites keep working
-# without touching every endpoint signature.
+# core.auth holds no-op shims: `require_bearer` is a no-op dependency (no
+# token required); the JWT/scope helpers return empty/identity values.
 from core.auth import (  # noqa: F401
     require_bearer,
     decode_jwt_payload as _decode_jwt_payload,
@@ -145,7 +128,7 @@ from core.auth import (  # noqa: F401
 
 
 # -----------------------------
-# MCP proxy helpers (mcp_get/post/put/patch/delete) moved to core.mcp_client.
+# MCP proxy helpers (mcp_get/post/put/patch/delete) live in core.mcp_client.
 # invoke_tool stays here because it short-circuits the virtual-composite tool
 # (`inventory_get_switch_inventory_overview`) which calls back into helpers
 # defined later in this file.
@@ -163,7 +146,7 @@ async def invoke_tool(tool: str, inputs: Dict[str, Any], token: Optional[str] = 
     switch_ip = (inputs or {}).get("switch_ip")
     # inventory_get_switch_inventory_overview is a CLIENT-side virtual tool
     # (composed here, not on the MCP server). /api/invoke special-cases it;
-    # mirror that here so background/ambient callers don't get a 404.
+    # mirror that here so callers that go through invoke_tool don't get a 404.
     if tool == "inventory_get_switch_inventory_overview":
         try:
             payload = await _virtual_inventory_overview(inputs or {}, token=token)
@@ -253,7 +236,6 @@ VIRTUAL_TOOLS: List[Dict[str, Any]] = [
 ]
 
 
-# _pick_str moved to nl/list_filters.py in task #95 — re-imported below.
 from nl.list_filters import _pick_str  # noqa: F401
 
 
@@ -347,9 +329,8 @@ async def _virtual_inventory_overview(inputs: Dict[str, Any], token: Optional[st
 # -----------------------------
 # Client-side list filtering (NL → list filtering)
 # -----------------------------
-# Filter clause extraction + application + LLM-extractor heuristic all
-# moved to backend/nl/list_filters.py in task #95. Re-imported here so
-# the existing call sites in the /api/nl endpoint keep working.
+# Filter clause extraction + application + LLM-extractor heuristic live in
+# backend/nl/list_filters.py; used by the /api/nl endpoint below.
 from nl.list_filters import (  # noqa: F401
     extract_filter_clauses,
     resolve_and_apply_filters,
@@ -388,11 +369,10 @@ async def get_tools_cached(ttl_s: int = 60, token: Optional[str] = None) -> List
 # Deterministic routing (fast path)
 # -----------------------------
 # The big ROUTES + RESTCONF tables (regex → tool name) and the intent
-# detectors (is_restconf_intent, is_switch_inventory_intent, etc.) were
-# extracted to backend/nl/deterministic.py in task #91 — that file is
-# pure data + simple regex helpers and lifts cleanly into a different
-# MCP client. `pick_tool_deterministic` below stays in main.py because
-# it needs the live `_TOOLS_CACHE` for the bare-tool-name shortcut.
+# detectors (is_restconf_intent, is_switch_inventory_intent, etc.) live in
+# backend/nl/deterministic.py — pure data + simple regex helpers.
+# `pick_tool_deterministic` below stays in main.py because it needs the
+# live `_TOOLS_CACHE` for the bare-tool-name shortcut.
 from nl.deterministic import (  # noqa: F401
     ROUTES,
     RESTCONF_TOOLS,
@@ -400,12 +380,6 @@ from nl.deterministic import (  # noqa: F401
     is_switch_inventory_intent,
     pick_restconf_tool,
     _GENERIC_HEALTH_TOOLS,
-    # `_RESTCONF_TOPIC_ROUTES` is re-exported here because
-    # `ambient/chat_pipeline.py` does `from main import _RESTCONF_TOPIC_ROUTES`
-    # to walk the table inline. The underscore prefix is convention-only
-    # in this codebase; cross-module imports happen anyway. Without this
-    # re-export the chat pipeline crashes on every inbound Twilio /
-    # Telegram message with `cannot import name '_RESTCONF_TOPIC_ROUTES'`.
     _RESTCONF_TOPIC_ROUTES,
 )
 
@@ -434,9 +408,9 @@ def pick_tool_deterministic(text: str) -> Optional[str]:
     return None
 
 
-# ── LLM-pick helpers extracted to backend/nl/llm_pick.py (task #88) ──
-# Re-imported here so the few in-main callers (the natural_language
-# endpoint, example-running endpoints) keep working unchanged.
+# ── LLM-pick helpers (backend/nl/llm_pick.py) ──
+# Used by the in-main callers: the natural_language endpoint and the
+# example-running endpoints.
 from nl.llm_pick import (  # noqa: F401
     score_tool,
     top_tool_candidates,
@@ -447,25 +421,22 @@ from nl.llm_pick import (  # noqa: F401
     llm_explain_openai,
 )
 
-# OpenAI-key helpers — re-exported under the historical underscore
-# names so the ~7 in-main callsites (status/whoami/explain endpoints
-# + natural_language dispatch) keep working unchanged. The shim used
-# to live with the LLM-pick helpers at line ~1441; restored here
-# explicitly after the nl/llm_pick.py extraction (task #88).
+# OpenAI-key helpers — used by the in-main callsites (status/whoami/explain
+# endpoints + natural_language dispatch).
 from core.llm import (  # noqa: F401
     get_openai_key as _get_openai_key,
     openai_chat as _openai_chat,
 )
 
 # Tool-input extractors (fabric/tenant name resolution + RESTCONF
-# switch_ip pull) moved to backend/nl/extract.py in task #95.
+# switch_ip pull) live in backend/nl/extract.py.
 from nl.extract import (  # noqa: F401
     _clean_name,
     _extract_after_keyword,
     extract_inputs,
 )
 
-# Console summary builder moved to backend/nl/summary.py in task #95.
+# Console summary builder (backend/nl/summary.py).
 from nl.summary import build_console_summary  # noqa: F401
 
 
@@ -727,13 +698,10 @@ async def openai_status(token: str = Depends(require_bearer)):
     return {"has_key": bool(_get_openai_key()), "model": _llm.OPENAI_MODEL}
 
 
-# (Firmware-server SSH browsing endpoint removed — it belonged to the
-# enterprise firmware-upgrade flow, which the community edition does not have.)
-
 @app.get("/api/whoami")
 async def whoami(token: str = Depends(require_bearer)):
-    """Static identity — the community edition has no authentication. Kept
-    so any frontend code that still probes identity gets a stable answer."""
+    """Static identity — the community edition has no authentication. Returns
+    a stable answer for any frontend code that still probes identity."""
     return {
         "sub": "operator",
         "role": "operator",
@@ -789,15 +757,12 @@ async def invoke(req: InvokeReq, token: str = Depends(require_bearer)):
 import agent as _agent
 
 
-# ── Agent endpoints — extracted to backend/agent_routes.py (task #71) ─
-# All 8 /api/agent/* endpoints + the per-skill helpers (budget gate,
-# openai chat factory, webhook fire, invoke_tool / fetch_catalog
-# adapters) now live in a single APIRouter that we wire here.
+# ── Agent endpoints (backend/agent_routes.py) ─
+# The /api/agent/* endpoints + the per-skill helpers (budget gate, openai
+# chat factory, webhook fire, invoke_tool / fetch_catalog adapters) live
+# in a single APIRouter that we wire here.
 from agent_routes import router as _agent_router
 app.include_router(_agent_router)
-
-# RoCE host-test runner and the health-watcher subsystem have been REMOVED
-# from the community edition (enterprise-only).
 
 
 @app.get("/api/audit")
@@ -805,14 +770,7 @@ async def audit_log(
     n: int = Query(default=100, ge=1, le=2000),
     token: str = Depends(require_bearer),
 ):
-    """Return the last *n* audit records from the JSONL log.
-
-    Only admin-role callers may access this endpoint.
-    """
-    claims = _decode_jwt_payload(token)
-    if claims.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Admin role required")
-
+    """Return the last *n* audit records from the JSONL log."""
     log_path = Path(AUDIT_LOG_PATH)
     if not log_path.exists():
         return []
@@ -1254,10 +1212,7 @@ async def get_suggestions(
     return await mcp_get(f"/suggest?last_tool={last_tool}&limit={limit}", token=token)
 
 
-# Tier-4 admin endpoints, the mutation ledger, and the entire ambient-agent
-# subsystem (chat / Twilio / Telegram / scheduler / event-ingest / widget
-# render) have been REMOVED from the community edition. The static-UI mount
-# that serves the built frontend follows.
+# The static-UI mount that serves the built frontend follows.
 
 
 if os.path.isdir(FRONTEND_DIST):
