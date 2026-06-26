@@ -14,8 +14,15 @@ import {
   detectSwVersionIntent,
   detectDirectToolCall,
   detectFabricTopologyIntent,
+  detectFleetInventoryIntent,
+  detectFleetMediaInventoryIntent,
+  detectSerialSearchIntent,
   _extractScope,
 } from "./lib/nl/detectors";
+// Compass NL parser — "where is X" / "compass" / "what's on port X" /
+// "show MACs in VLAN N". Returns instructions for App.tsx; App.tsx
+// applies them via state setters.
+import { parseCompassPrompt } from "./lib/nl/compass";
 // NL textarea + LLM-tier selector + OpenAI key config (localStorage-
 // backed). See lib/useNlSettings.ts.
 import { useNlSettings } from "./lib/useNlSettings";
@@ -46,6 +53,11 @@ import { ArpTableWidget } from "./components/ArpTableWidget";
 import { IpIfaceWidget } from "./components/IpIfaceWidget";
 import { PortStatsWidget } from "./components/PortStatsWidget";
 import { MediaWidget } from "./components/MediaWidget";
+import { FleetInventoryWidget } from "./components/FleetInventoryWidget";
+import { FleetMediaInventoryWidget } from "./components/FleetMediaInventoryWidget";
+import { IpMacSearchWidget } from "./components/IpMacSearchWidget";
+import { useFleetInventory } from "./lib/useFleetInventory";
+import { useFleetMediaInventory } from "./lib/useFleetMediaInventory";
 import { VlanBriefWidget } from "./components/VlanBriefWidget";
 import { TenantHistoryReportWidget } from "./components/TenantHistoryReportWidget";
 import { Panel } from "./components/Panel";
@@ -269,6 +281,30 @@ export default function App() {
 
   // Fabrics health widget
   const [fabricsHealthWidgetOpen, setFabricsHealthWidgetOpen] = useState<boolean>(false);
+
+  // ── Fleet inventory widget (tier-2 console) ────────────────────────
+  // Aggregates inventory_getswitches (+ inventory_get_chassis_info_bulk
+  // for serials when available). The hook does the parallel fetch + join.
+  const [fleetInvOpen, setFleetInvOpen] = useState<boolean>(false);
+  const [fleetInvFilter, setFleetInvFilter] = useState<string>("");
+  const [fleetInvFabric, setFleetInvFabric] = useState<string>("");
+  const fleetInv = useFleetInventory();
+
+  // ── Fleet media inventory widget (tier-2 console) ──────────────────
+  // Fans out restconf_get_media_detail across every switch; the widget
+  // renders the flattened transceiver rows with switch context.
+  const [fleetMediaOpen, setFleetMediaOpen] = useState<boolean>(false);
+  const [fleetMediaFilter, setFleetMediaFilter] = useState<string>("");
+  const [fleetMediaFabric, setFleetMediaFabric] = useState<string>("");
+  const fleetMedia = useFleetMediaInventory();
+
+  // ── Compass (IP / MAC / port / VLAN search) widget ─────────────────
+  // Single search box that auto-classifies the query and fires the
+  // right RESTCONF tool. NL handler sets initialQuery (raw needle) +
+  // optional per-switch scope; widget renders inline.
+  const [ipMacSearchOpen, setIpMacSearchOpen] = useState<boolean>(false);
+  const [ipMacSearchQuery, setIpMacSearchQuery] = useState<string>("");
+  const [ipMacSearchScope, setIpMacSearchScope] = useState<string[]>([]);
 
   // Alarm details with context widget
   const [alarmDetailsWidgetOpen, setAlarmDetailsWidgetOpen] = useState<boolean>(false);
