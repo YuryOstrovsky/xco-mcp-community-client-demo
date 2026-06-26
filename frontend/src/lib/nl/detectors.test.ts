@@ -5,7 +5,13 @@
 // New detector → new test, keeping coverage proportional.
 
 import { describe, it, expect } from "vitest";
-import { detectEditTenantIntent, detectFabricTopologyIntent } from "./detectors";
+import {
+  detectEditTenantIntent,
+  detectFabricTopologyIntent,
+  detectFleetInventoryIntent,
+  detectFleetMediaInventoryIntent,
+  detectSerialSearchIntent,
+} from "./detectors";
 
 describe("detectEditTenantIntent", () => {
   it("matches 'edit tenant ROCE-LAB' and extracts the name", () => {
@@ -151,5 +157,90 @@ describe("detectFabricTopologyIntent", () => {
   it("returns no-match on empty input", () => {
     expect(detectFabricTopologyIntent("").matched).toBe(false);
     expect(detectFabricTopologyIntent("   ").matched).toBe(false);
+  });
+});
+
+// These three detectors drive the restored fleet-inventory / fleet-media
+// / Compass wiring in App.tsx (runNL routing). The routing relies on
+// them short-circuiting cleanly, so lock the boundaries down.
+describe("detectFleetInventoryIntent (→ FleetInventoryWidget)", () => {
+  it("matches 'fleet inventory'", () => {
+    expect(detectFleetInventoryIntent("show fleet inventory").matched).toBe(true);
+  });
+
+  it("matches 'chassis inventory'", () => {
+    expect(detectFleetInventoryIntent("chassis inventory").matched).toBe(true);
+  });
+
+  it("matches 'serial numbers for switches' (chassis-qualified)", () => {
+    expect(detectFleetInventoryIntent("show serial numbers for switches").matched).toBe(true);
+  });
+
+  it("extracts a fabric scope from 'fleet inventory for fabric DC-A'", () => {
+    const r = detectFleetInventoryIntent("fleet inventory for fabric DC-A");
+    expect(r.matched).toBe(true);
+    expect(r.scopeFabric).toBe("DC-A");
+  });
+
+  it("DOES NOT match a bare transceiver query", () => {
+    expect(detectFleetInventoryIntent("show transceivers").matched).toBe(false);
+  });
+
+  it("returns no-match on empty input", () => {
+    expect(detectFleetInventoryIntent("").matched).toBe(false);
+  });
+});
+
+describe("detectFleetMediaInventoryIntent (→ FleetMediaInventoryWidget)", () => {
+  it("matches 'show transceivers'", () => {
+    expect(detectFleetMediaInventoryIntent("show transceivers").matched).toBe(true);
+  });
+
+  it("matches 'list optics across the fleet'", () => {
+    expect(detectFleetMediaInventoryIntent("list optics across the fleet").matched).toBe(true);
+  });
+
+  it("matches 'show media'", () => {
+    expect(detectFleetMediaInventoryIntent("show media").matched).toBe(true);
+  });
+
+  // Chassis-qualified serial belongs to the chassis (fleet-inventory)
+  // detector, NOT the per-port media one.
+  it("DOES NOT match 'serial numbers for switches' (yields to chassis)", () => {
+    expect(detectFleetMediaInventoryIntent("show serial numbers for switches").matched).toBe(false);
+  });
+
+  // A switch-scoped media query falls through to the single-switch
+  // MediaWidget — App.tsx only opens the fleet aggregate when un-scoped.
+  it("reports scopeIp so App.tsx can fall through for a single switch", () => {
+    const r = detectFleetMediaInventoryIntent("show media on 10.9.140.41");
+    expect(r.matched).toBe(true);
+    expect(r.scopeIp).toBe("10.9.140.41");
+  });
+
+  it("returns no-match on empty input", () => {
+    expect(detectFleetMediaInventoryIntent("").matched).toBe(false);
+  });
+});
+
+describe("detectSerialSearchIntent (→ FleetInventoryWidget filtered)", () => {
+  it("matches 'find switch with serial FLN4318Q001'", () => {
+    const r = detectSerialSearchIntent("find switch with serial FLN4318Q001");
+    expect(r.matched).toBe(true);
+    expect(r.serial).toBe("FLN4318Q001");
+  });
+
+  it("matches 'where is sn 1950Q-30014'", () => {
+    const r = detectSerialSearchIntent("where is sn 1950Q-30014");
+    expect(r.matched).toBe(true);
+    expect(r.serial).toBe("1950Q-30014");
+  });
+
+  it("DOES NOT match without a verb signal", () => {
+    expect(detectSerialSearchIntent("serial FLN4318Q001").matched).toBe(false);
+  });
+
+  it("returns no-match on empty input", () => {
+    expect(detectSerialSearchIntent("").matched).toBe(false);
   });
 });

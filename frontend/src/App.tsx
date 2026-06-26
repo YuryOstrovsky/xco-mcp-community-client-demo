@@ -341,6 +341,45 @@ export default function App() {
   const [switchOptions, setSwitchOptions] = useState<{ ip: string; name?: string | null; fabric?: string | null }[]>([]);
   const [switchOptionsLoading, setSwitchOptionsLoading] = useState(false);
 
+  // Compass prop memos — derived from switchOptions. Memoized so the
+  // identity is stable across the ~60s inventory-refresh re-renders
+  // (otherwise IpMacSearchWidget would wipe the operator's typed query
+  // + results on every tick). Declared here, AFTER switchOptions, since
+  // TS forbids referencing a const before its declaration.
+  const compassFleetIps = useMemo(
+    () => switchOptions.map((s) => s.ip),
+    [switchOptions],
+  );
+  const compassSwitchNameByIp = useMemo(
+    () => Object.fromEntries(
+      switchOptions.filter((s) => s.name).map((s) => [s.ip, s.name as string]),
+    ),
+    [switchOptions],
+  );
+  const compassSwitchIpByName = useMemo(
+    () => Object.fromEntries(
+      switchOptions.filter((s) => s.name).map((s) => [s.name as string, s.ip]),
+    ),
+    [switchOptions],
+  );
+
+  // Auto-fetch fleet inventory / media when their widgets open. Single-
+  // site community client → refresh() takes no site arg. The hook
+  // ref is stable, so we only depend on the open flag.
+  useEffect(() => {
+    if (fleetInvOpen) {
+      void fleetInv.refresh();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fleetInvOpen]);
+
+  useEffect(() => {
+    if (fleetMediaOpen) {
+      void fleetMedia.refresh();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fleetMediaOpen]);
+
   const [lldpSeedIp, setLldpSeedIp] = useState<string>("");
   const [lldpDepth, setLldpDepth] = useState<1 | 2>(1);
   const [lldpNodes, setLldpNodes] = useState<Node[]>([]);
@@ -1098,6 +1137,9 @@ async function randomExample() {
     setRunningConfigOpen(false);
     setIfaceWidgetOpen(false);
     setIfaceDetailWidgetOpen(false);
+    setFleetInvOpen(false);
+    setFleetMediaOpen(false);
+    setIpMacSearchOpen(false);
     setFabricsHealthWidgetOpen(false);
     setFabricHealthWidgetOpen(false);
     setFabricTopoOpen(false);
@@ -1111,6 +1153,41 @@ async function randomExample() {
     setQuickActive("");
     setFabricTopoName(fabricName || "");
     setFabricTopoOpen(true);
+    setActiveTab("console");
+  }
+
+  // ── Fleet inventory / media / compass openers ──────────────────────
+  // Each closes the other tier-2 console widgets first (so they don't
+  // stack), sets the filter/fabric scope, opens the widget, switches to
+  // the console tab, and kicks off the hook fetch. The open useEffect
+  // also fires refresh() on open — calling it here makes the first
+  // paint immediate instead of waiting a tick.
+  function handleOpenFleetInventory(filter?: string, fabric?: string) {
+    closeAllConsoleWidgets();
+    setFleetInvFilter(filter || "");
+    setFleetInvFabric(fabric || "");
+    setFleetInvOpen(true);
+    setActiveTab("console");
+    void fleetInv.refresh();
+  }
+
+  function handleOpenFleetMedia(filter?: string, fabric?: string) {
+    closeAllConsoleWidgets();
+    setFleetMediaFilter(filter || "");
+    setFleetMediaFabric(fabric || "");
+    setFleetMediaOpen(true);
+    setActiveTab("console");
+    void fleetMedia.refresh();
+  }
+
+  // Compass opener. Empty query → blank search box (operator types).
+  // Non-empty query (+ optional scope IPs) → the widget auto-fires on
+  // open. Fed from the bare "compass" keyword and "where is X" NL.
+  function handleOpenIpMacSearch(query: string, scopeIps: string[]) {
+    closeAllConsoleWidgets();
+    setIpMacSearchQuery(query);
+    setIpMacSearchScope(scopeIps);
+    setIpMacSearchOpen(true);
     setActiveTab("console");
   }
 
@@ -1137,6 +1214,9 @@ async function randomExample() {
     setIfaceDetailWidgetOpen(false);
     setClockWidgetOpen(false);
     setMediaWidgetOpen(false);
+    setFleetInvOpen(false);
+    setFleetMediaOpen(false);
+    setIpMacSearchOpen(false);
     setPortStatsWidgetOpen(false);
     setIpIfaceWidgetOpen(false);
     setArpTableWidgetOpen(false);
@@ -1313,6 +1393,15 @@ async function randomExample() {
     { tool: "tenant_get_tenants",                                setOpen: setTenantWidgetOpen },
     { tool: "tenant_get_all_endpoint_groups",                    setOpen: setEpgWidgetOpen },
     { tool: "fabric_get_fabrics_health",                         setOpen: setFabricsHealthWidgetOpen },
+    // Direct run of inventory_getswitches opens the sortable fleet
+    // inventory table (instead of the dashboard donut). onOpen resets
+    // the filter/fabric scope and kicks the hook's parallel fetch.
+    { tool: "inventory_getswitches",                             setOpen: setFleetInvOpen,
+      onOpen: () => {
+        setFleetInvFilter("");
+        setFleetInvFabric("");
+        void fleetInv.refresh();
+      } },
     { tool: "fault_get_alarm_details_with_context",              setOpen: setAlarmDetailsWidgetOpen },
     { tool: "tenant_get_service_epg_historical_report_stub",     setOpen: setTenantHistoryWidgetOpen },
     { tool: "inventory_get_software_version_mismatch",           setOpen: setSwVerWidgetOpen },
@@ -1726,6 +1815,9 @@ async function randomExample() {
     setIfaceDetailWidgetOpen(false);
     setClockWidgetOpen(false);
     setMediaWidgetOpen(false);
+    setFleetInvOpen(false);
+    setFleetMediaOpen(false);
+    setIpMacSearchOpen(false);
     setPortStatsWidgetOpen(false);
     setIpIfaceWidgetOpen(false);
     setArpTableWidgetOpen(false);
@@ -1740,6 +1832,25 @@ async function randomExample() {
     setEpgWidgetOpen(false);
     setTenantHistoryWidgetOpen(false);
     setSwVerWidgetOpen(false);
+
+    // ── Compass (IP / MAC / port / VLAN search) intent ───────────────────────
+    // "compass" (bare) opens the empty search box; "where is X" / "find X" /
+    // "what's on port X" / "show MACs in VLAN N" opens it pre-filled and
+    // auto-fires. parseCompassPrompt classifies; App.tsx applies via setters.
+    {
+      const compass = parseCompassPrompt(text, switchOptions);
+      if (compass.kind === "open_empty") {
+        setNlRunning(false);
+        handleOpenIpMacSearch("", []);
+        return;
+      }
+      if (compass.kind === "open_with_query") {
+        setNlRunning(false);
+        handleOpenIpMacSearch(compass.query, compass.scopeIps);
+        return;
+      }
+      // compass.kind === "no_match" → fall through to the other detectors.
+    }
 
     // ── Plan intent detection ─────────────────────────────────────────────────
     const planIntent = detectPlanIntent(text.trim());
@@ -1846,6 +1957,45 @@ async function randomExample() {
       setNlRunning(false); // handled outside the NL pipeline
       handleOpenFabricTopology(fabricTopoIntent.fabricName || undefined);
       return;
+    }
+    // ── Search-by-serial intent → Fleet Inventory ─────────────────────────────
+    // "find switch with serial X" / "where is sn FLN…" — opens the fleet
+    // inventory table pre-filtered to the serial. The widget's free-text
+    // filter already searches the serial column, so the row falls out.
+    {
+      const snHit = detectSerialSearchIntent(text.trim());
+      if (snHit.matched && snHit.serial) {
+        setNlRunning(false);
+        handleOpenFleetInventory(snHit.serial, "");
+        return;
+      }
+    }
+    // ── Fleet media (transceiver / optics) intent → Fleet Media ───────────────
+    // "show transceivers" / "list optics" / "media across the fabric" opens
+    // the fan-out media table. If the operator scoped to ONE switch (by name
+    // or IP), fall through to the standard NL pipeline — the single-switch
+    // MediaWidget has the nicer per-port visual. Only the un-scoped /
+    // fabric-level case opens the fleet aggregate here.
+    {
+      const mediaHit = detectFleetMediaInventoryIntent(text.trim());
+      if (mediaHit.matched && !mediaHit.scopeName && !mediaHit.scopeIp) {
+        setNlRunning(false);
+        handleOpenFleetMedia("", mediaHit.scopeFabric || "");
+        return;
+      }
+      // else: scoped to one switch → fall through to RESTCONF / LLM path.
+    }
+    // ── Fleet chassis inventory intent → Fleet Inventory ──────────────────────
+    // "fleet inventory" / "chassis inventory" / "serial numbers for switches"
+    // opens the sortable + exportable fleet table.
+    {
+      const fiHit = detectFleetInventoryIntent(text.trim());
+      if (fiHit.matched) {
+        setNlRunning(false);
+        const scope = fiHit.scopeName || fiHit.scopeIp || "";
+        handleOpenFleetInventory(scope, fiHit.scopeFabric || "");
+        return;
+      }
     }
     // ── Direct tool name detection ────────────────────────────────────────────
     // If the user typed the tool name verbatim, skip the LLM entirely.
@@ -2006,6 +2156,9 @@ async function randomExample() {
     setIfaceDetailWidgetOpen(false);
     setClockWidgetOpen(false);
     setMediaWidgetOpen(false);
+    setFleetInvOpen(false);
+    setFleetMediaOpen(false);
+    setIpMacSearchOpen(false);
     setPortStatsWidgetOpen(false);
     setIpIfaceWidgetOpen(false);
     setArpTableWidgetOpen(false);
@@ -3414,7 +3567,8 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
   // this is just a read-only roll-up.
   const anyTierWidgetOpen =
     ifaceWidgetOpen || ifaceDetailWidgetOpen || runningConfigOpen ||
-    clockWidgetOpen || mediaWidgetOpen || portStatsWidgetOpen ||
+    clockWidgetOpen || mediaWidgetOpen || fleetInvOpen || fleetMediaOpen ||
+    ipMacSearchOpen || portStatsWidgetOpen ||
     ipIfaceWidgetOpen || arpTableWidgetOpen || lldpNeighWidgetOpen ||
     maintRateWidgetOpen || vlanBriefWidgetOpen || vrfSummaryWidgetOpen ||
     firmwareWidgetOpen || fabricHealthWidgetOpen || monitorHealthWidgetOpen ||
@@ -3789,6 +3943,9 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
     setRunningConfigOpen(false);
     setClockWidgetOpen(false);
     setMediaWidgetOpen(false);
+    setFleetInvOpen(false);
+    setFleetMediaOpen(false);
+    setIpMacSearchOpen(false);
     setPortStatsWidgetOpen(false);
     setIpIfaceWidgetOpen(false);
     setArpTableWidgetOpen(false);
@@ -4482,6 +4639,40 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
     + render. Adding a new simple widget = 1 line here. */}
 <SimpleToolResultWidgetMount open={portStatsWidgetOpen} resp={resp} Widget={PortStatsWidget} onClose={() => setPortStatsWidgetOpen(false)} />
 <SimpleToolResultWidgetMount open={mediaWidgetOpen} resp={resp} Widget={MediaWidget} onClose={() => setMediaWidgetOpen(false)} />
+
+{/* ── Fleet inventory / media / Compass (tier-2 console widgets) ────────
+    Self-contained: each reads its own hook bundle, not `resp`. Opened
+    via NL detectors + the inventory_getswitches registry entry. */}
+{fleetMediaOpen && (
+  <FleetMediaInventoryWidget
+    items={fleetMedia.items}
+    initialFilter={fleetMediaFilter}
+    initialFabric={fleetMediaFabric}
+    loading={fleetMedia.loading}
+    errors={fleetMedia.errors}
+    progress={fleetMedia.progress}
+    onClose={() => setFleetMediaOpen(false)}
+  />
+)}
+{fleetInvOpen && (
+  <FleetInventoryWidget
+    items={fleetInv.items}
+    initialFilter={fleetInvFilter}
+    initialFabric={fleetInvFabric}
+    onClose={() => setFleetInvOpen(false)}
+  />
+)}
+{ipMacSearchOpen && (
+  <IpMacSearchWidget
+    open={ipMacSearchOpen}
+    initialQuery={ipMacSearchQuery}
+    initialScopeIps={ipMacSearchScope}
+    fleetSwitchIps={compassFleetIps}
+    switchNameByIp={compassSwitchNameByIp}
+    switchIpByName={compassSwitchIpByName}
+    onClose={() => setIpMacSearchOpen(false)}
+  />
+)}
 
 <SimpleToolResultWidgetMount open={ipIfaceWidgetOpen} resp={resp} Widget={IpIfaceWidget} onClose={() => setIpIfaceWidgetOpen(false)} />
 <SimpleToolResultWidgetMount open={lldpNeighWidgetOpen} resp={resp} Widget={LldpNeighWidget} onClose={() => setLldpNeighWidgetOpen(false)} />
