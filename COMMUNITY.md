@@ -6,6 +6,13 @@ server (Tier-1/Tier-2 SAFE_READ tools only). It was produced by stripping
 the enterprise client down — removing authentication/OAuth2, the entire
 Tier-3/Tier-4 mutation surface, and the enterprise-only subsystems.
 
+> **Reference / demo only — unsupported.** This is a plug-and-play demo for
+> people who want a ready-made UI + NL console over the community server
+> **without building their own agent/client/frontend**. It is **not a
+> product** and is **supported by no one — not Extreme Networks GTAC, not
+> the authors**. It is useless without the **community XCO MCP server**:
+> **https://github.com/YuryOstrovsky/xco-mcp-community-server**
+
 If you're looking for the enterprise feature set (plans pipeline, mutation
 proposals, RoCE, multi-site, ambient agent, RBAC, etc.), this is not that
 build — those features were deliberately removed here.

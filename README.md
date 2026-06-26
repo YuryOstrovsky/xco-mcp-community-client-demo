@@ -6,9 +6,24 @@ question in natural language, browse the live tool catalog, or run a
 read-only investigation — all against a Tier-1/Tier-2 SAFE_READ MCP
 server that requires no login.
 
-> **Demonstration / reference only.** This client performs **no mutations
-> and no authentication**. See [COMMUNITY.md](COMMUNITY.md) for scope and
-> [DEPLOY.md](DEPLOY.md) for the Docker deployment guide.
+> ## ⚠️ Read this first
+>
+> **Reference / demo software — provided AS-IS, unsupported.**
+>
+> - **What it's for.** A **plug-and-play** demo for people who want to try the
+>   community XCO MCP server through a ready-made UI + natural-language console
+>   **without building their own AI agent, client, or frontend**. It is a
+>   *reference design*, not a product.
+> - **It needs the server.** This client does nothing on its own — it is a
+>   front-end for the **community XCO MCP server**, which you run **separately**:
+>   **→ https://github.com/YuryOstrovsky/xco-mcp-community-server**
+>   Point `MCP_BASE_URL` at your running community server (see
+>   [DEPLOY.md](DEPLOY.md)).
+> - **No support. Period.** This is unsupported, community, use-at-your-own-risk
+>   software. **No support from anyone — not from Extreme Networks GTAC, not
+>   from the authors.** You are entirely on your own.
+> - **Read-only & auth-free** — no mutations, no login. See
+>   [COMMUNITY.md](COMMUNITY.md) for scope.
 
 ---
 
@@ -20,8 +35,8 @@ server that requires no login.
 - **Tools browser** — the live MCP catalog (`/api/tools`) with a
   schema-driven input form; run any read tool and view its payload.
 - **Read-only investigations** — bounded LLM tool-use loops that chain read
-  tools into a Markdown report (5 skills: fabric-health, pre-/post-firmware
-  checks, pre-RMA, XCO health).
+  tools into a Markdown report (fabric-health, post-firmware verification,
+  pre-RMA checks).
 - **Per-switch widgets** — typed viewers for RESTCONF / inventory payloads
   (interfaces, ARP, LLDP, running-config, clocks, VRF/VLAN summaries, …).
 - **Activity log** — a tail of every operator-visible event (`/api/audit`).
@@ -104,7 +119,11 @@ cd backend && BASE_URL=http://127.0.0.1:5174 .venv/bin/python -m tests.smoke
 cd frontend && npm run build && npm test
 ```
 
-## Status
+## Status & support
 
-Demonstration software, provided **as-is** for evaluating the community XCO
-MCP server. Not a supported product.
+Demonstration / **reference** software, provided **AS-IS** for evaluating the
+community XCO MCP server. **Not a product, and not supported by anyone —
+including Extreme Networks GTAC.** Use entirely at your own risk.
+
+Requires the **community XCO MCP server** to run against:
+**https://github.com/YuryOstrovsky/xco-mcp-community-server**

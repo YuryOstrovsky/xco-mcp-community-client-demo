@@ -13,11 +13,16 @@ server and serves the built React UI on **one port (5174)**.
 ## Prerequisites
 
 - **Docker Engine 20.10+** (Compose v2 optional) on the target box.
-- A running **community XCO MCP server** reachable from the container. It
-  needs **no authentication**. Note its URL — e.g. `http://<host>:8000`
+- A running **community XCO MCP server** — **required**; this client is just a
+  front-end for it. Get it here:
+  **https://github.com/YuryOstrovsky/xco-mcp-community-server**.
+  It needs **no authentication**. Note its URL — e.g. `http://<host>:8000`
   (or `http://host.docker.internal:8000` when it runs in Docker on the
   same host; see [Networking](#networking--same-host-deployment)).
 - That's it. No client credentials, no OAuth2 client registration.
+
+> Reference / demo software, **AS-IS and unsupported** (not by Extreme
+> Networks GTAC, not by the authors). Use at your own risk.
 
 ---
 
