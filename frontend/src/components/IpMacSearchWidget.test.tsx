@@ -1,11 +1,12 @@
 // IpMacSearchWidget (Compass) unit tests.
 //
-// Covers the two pieces that matter for the community adaptation:
+// Covers:
 //   1. detectKind — the pure IP/MAC/port/VLAN classifier.
-//   2. Graceful degradation when the MAC-address-table tool is absent
-//      from the catalog: MAC / VLAN searches must NOT call the missing
-//      tool and must surface the "MAC table unavailable" notice, while
-//      IP search still fires restconf_get_arp_table.
+//   2. Tool wiring when the MAC-address-table tool is present in the
+//      catalog (the community server now ships it): MAC / VLAN / port
+//      searches invoke restconf_slx_get_mac_address_table; IP search
+//      fires restconf_get_arp_table. When the tool is absent the widget
+//      falls back to ARP (the MAC_TABLE_AVAILABLE=false branch).
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -70,7 +71,7 @@ describe("IpMacSearchWidget — open gate", () => {
   });
 });
 
-describe("IpMacSearchWidget — MAC table unavailable degradation", () => {
+describe("IpMacSearchWidget — MAC table available (tool in catalog)", () => {
   it("auto-fires restconf_get_arp_table for an IP query", async () => {
     render(<IpMacSearchWidget {...BASE_PROPS} initialQuery="10.10.10.125" />);
     await waitFor(() => {
@@ -78,33 +79,41 @@ describe("IpMacSearchWidget — MAC table unavailable degradation", () => {
     });
     const tools = invokeMock.mock.calls.map((c) => c[0]);
     expect(tools).toContain("restconf_get_arp_table");
-    // The absent MAC tool must never be invoked.
-    expect(tools).not.toContain("restconf_slx_get_mac_address_table");
   });
 
-  it("does NOT call any tool for a MAC query and shows the unavailable notice", async () => {
+  it("queries the MAC table (with mac_filter) for a MAC query", async () => {
     render(<IpMacSearchWidget {...BASE_PROPS} initialQuery="0004.96d6.8649" />);
     await waitFor(() => {
-      expect(screen.getByText(/MAC table unavailable/i)).toBeInTheDocument();
+      expect(invokeMock).toHaveBeenCalled();
     });
-    expect(invokeMock).not.toHaveBeenCalled();
+    const tools = invokeMock.mock.calls.map((c) => c[0]);
+    expect(tools).toContain("restconf_slx_get_mac_address_table");
+    const macCall = invokeMock.mock.calls.find(
+      (c) => c[0] === "restconf_slx_get_mac_address_table",
+    );
+    expect(macCall?.[1]).toMatchObject({ mac_filter: "0004.96d6.8649" });
   });
 
-  it("does NOT call any tool for a VLAN query and shows the unavailable notice", async () => {
+  it("queries the MAC table (with vlan_filter) for a VLAN query", async () => {
     render(<IpMacSearchWidget {...BASE_PROPS} initialQuery="100" />);
     await waitFor(() => {
-      expect(screen.getByText(/MAC table unavailable/i)).toBeInTheDocument();
+      expect(invokeMock).toHaveBeenCalled();
     });
-    expect(invokeMock).not.toHaveBeenCalled();
+    const tools = invokeMock.mock.calls.map((c) => c[0]);
+    expect(tools).toContain("restconf_slx_get_mac_address_table");
+    const macCall = invokeMock.mock.calls.find(
+      (c) => c[0] === "restconf_slx_get_mac_address_table",
+    );
+    expect(macCall?.[1]).toMatchObject({ vlan_filter: 100 });
   });
 
-  it("falls back to ARP only for a port query (no MAC tool)", async () => {
+  it("queries both the MAC table and ARP for a port query", async () => {
     render(<IpMacSearchWidget {...BASE_PROPS} initialQuery="0/50" />);
     await waitFor(() => {
       expect(invokeMock).toHaveBeenCalled();
     });
     const tools = invokeMock.mock.calls.map((c) => c[0]);
+    expect(tools).toContain("restconf_slx_get_mac_address_table");
     expect(tools).toContain("restconf_get_arp_table");
-    expect(tools).not.toContain("restconf_slx_get_mac_address_table");
   });
 });
