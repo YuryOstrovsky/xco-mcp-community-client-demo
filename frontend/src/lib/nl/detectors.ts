@@ -75,6 +75,56 @@ export function detectLldpIntent(text: string): LldpIntent | null {
   return { kind: "topology", seedIp: null, depth };
 }
 
+// ── Fabric topology intent ───────────────────────────────────────────
+// Routes "show topology" / "fabric topology" / "show topology for
+// <fabric>" (with NO switch IP) to the read-only FabricTopologyView
+// instead of the NL backend (which otherwise mis-routes a bare "show
+// topology" to monitor_get_health).
+//
+// Deliberately scoped to AVOID stealing the LLDP map:
+//   • LLDP queries (containing "lldp") are handled by detectLldpIntent
+//     and must fall through here — we return no-match if "lldp" present.
+//   • "topology from <switch-IP>" / any prompt with an IPv4 address is
+//     a seed-based LLDP perspective map — leave it to the existing LLDP
+//     flow, so we return no-match when an IP is present.
+//
+// When matched, `fabricName` carries the "for/of <fabric>" scope if the
+// operator named one (so the view pre-selects it); otherwise it's "" and
+// the view opens with the fabric picker.
+export function detectFabricTopologyIntent(
+  text: string,
+): { matched: boolean; fabricName: string } {
+  const t = text.trim();
+  if (!t) return { matched: false, fabricName: "" };
+  // LLDP queries belong to detectLldpIntent.
+  if (/\blldp\b/i.test(t)) return { matched: false, fabricName: "" };
+  // An IPv4 address means a switch-seeded perspective map → LLDP flow.
+  if (/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(t)) {
+    return { matched: false, fabricName: "" };
+  }
+  // Must mention "topology".
+  if (!/\btopolog(y|ies)\b/i.test(t)) return { matched: false, fabricName: "" };
+
+  // Accept: "fabric topology", "show/draw/view/display/map (the) topology",
+  // "topology diagram/map/graph/view", or a "topology for/of <fabric>" scope.
+  const fabricWord = /\bfabric\b/i.test(t);
+  const verb = /\b(show|view|display|draw|map|render|see|open|get)\b/i.test(t);
+  const diagramWord = /\btopolog(y|ies)\s+(diagram|map|graph|view|chart)\b/i.test(t);
+  const scopeMatch = t.match(
+    /\btopolog(?:y|ies)\s+(?:for|of|in)\s+(?:fabric\s+)?([A-Za-z][A-Za-z0-9_-]{1,40})\b/i,
+  );
+  // Also catch "for/of fabric <name>" anywhere alongside "topology".
+  const fabricScopeMatch =
+    scopeMatch ??
+    t.match(/\b(?:for|of|in)\s+fabric\s+([A-Za-z][A-Za-z0-9_-]{1,40})\b/i);
+
+  if (!(fabricWord || verb || diagramWord || scopeMatch)) {
+    return { matched: false, fabricName: "" };
+  }
+  const fabricName = (fabricScopeMatch?.[1] ?? "").trim();
+  return { matched: true, fabricName };
+}
+
 // ── Direct-tool-name bypass ──────────────────────────────────────────
 // If the user types a known tool name verbatim, force that tool
 // deterministically. Bypasses the LLM tier.

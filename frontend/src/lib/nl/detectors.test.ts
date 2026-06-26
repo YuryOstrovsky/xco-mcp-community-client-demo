@@ -5,7 +5,7 @@
 // New detector → new test, keeping coverage proportional.
 
 import { describe, it, expect } from "vitest";
-import { detectEditTenantIntent } from "./detectors";
+import { detectEditTenantIntent, detectFabricTopologyIntent } from "./detectors";
 
 describe("detectEditTenantIntent", () => {
   it("matches 'edit tenant ROCE-LAB' and extracts the name", () => {
@@ -101,5 +101,55 @@ describe("detectEditTenantIntent", () => {
   it("is case-insensitive on the verb", () => {
     expect(detectEditTenantIntent("EDIT TENANT ROCE-LAB").matched).toBe(true);
     expect(detectEditTenantIntent("Edit Tenant Roce-Lab").matched).toBe(true);
+  });
+});
+
+describe("detectFabricTopologyIntent", () => {
+  it("matches 'show topology' with no fabric (picker)", () => {
+    const r = detectFabricTopologyIntent("show topology");
+    expect(r.matched).toBe(true);
+    expect(r.fabricName).toBe("");
+  });
+
+  it("matches 'fabric topology'", () => {
+    const r = detectFabricTopologyIntent("fabric topology");
+    expect(r.matched).toBe(true);
+    expect(r.fabricName).toBe("");
+  });
+
+  it("matches 'topology diagram'", () => {
+    expect(detectFabricTopologyIntent("topology diagram").matched).toBe(true);
+  });
+
+  it("extracts the fabric from 'show topology for lab-b-alex'", () => {
+    const r = detectFabricTopologyIntent("show topology for lab-b-alex");
+    expect(r.matched).toBe(true);
+    expect(r.fabricName).toBe("lab-b-alex");
+  });
+
+  it("extracts the fabric from 'topology of fabric DC-A'", () => {
+    const r = detectFabricTopologyIntent("topology of fabric DC-A");
+    expect(r.matched).toBe(true);
+    expect(r.fabricName).toBe("DC-A");
+  });
+
+  // LLDP queries belong to detectLldpIntent — must NOT be stolen here.
+  it("DOES NOT match 'show lldp topology'", () => {
+    expect(detectFabricTopologyIntent("show lldp topology").matched).toBe(false);
+  });
+
+  // A switch IP means an LLDP-seeded perspective map → leave to LLDP flow.
+  it("DOES NOT match 'topology from 10.9.140.31'", () => {
+    expect(detectFabricTopologyIntent("topology from 10.9.140.31").matched).toBe(false);
+  });
+
+  it("DOES NOT match unrelated prompts", () => {
+    expect(detectFabricTopologyIntent("show fabric health").matched).toBe(false);
+    expect(detectFabricTopologyIntent("list switches").matched).toBe(false);
+  });
+
+  it("returns no-match on empty input", () => {
+    expect(detectFabricTopologyIntent("").matched).toBe(false);
+    expect(detectFabricTopologyIntent("   ").matched).toBe(false);
   });
 });

@@ -13,6 +13,7 @@ import {
   detectLldpIntent,
   detectSwVersionIntent,
   detectDirectToolCall,
+  detectFabricTopologyIntent,
   _extractScope,
 } from "./lib/nl/detectors";
 // NL textarea + LLM-tier selector + OpenAI key config (localStorage-
@@ -68,6 +69,7 @@ import { RunningConfigWidget } from "./features/widgets/RunningConfigWidget";
 import { AllClocksModal } from "./features/widgets/AllClocksModal";
 import { IfaceWidget } from "./features/widgets/IfaceWidget";
 import { IfaceDetailWidget } from "./features/widgets/IfaceDetailWidget";
+import { FabricTopologyView } from "./features/fabric/FabricTopologyView";
 import { HelpWidget } from "./features/help/HelpWidget";
 import { ActivityLogPanel } from "./features/admin/ActivityLogPanel";
 import { ServerSettingsPanel } from "./features/admin/ServerSettingsPanel";
@@ -182,6 +184,11 @@ export default function App() {
   const switchPickerCallback = useRef<((ip: string, name: string) => void) | null>(null);
 
   const [quickActive, setQuickActive] = useState<string>("");
+  // Fabric Topology (read-only Clos diagram) — parent owns open + selected
+  // fabric; the FabricTopologyView feature component does the fetching +
+  // parsing + ReactFlow rendering. See features/fabric/FabricTopologyView.tsx.
+  const [fabricTopoOpen, setFabricTopoOpen] = useState<boolean>(false);
+  const [fabricTopoName, setFabricTopoName] = useState<string>("");
   // RESTCONF quick action state
   const [restconfIps, setRestconfIps] = useState<string[]>([]);
   const [restconfIp, setRestconfIp] = useState<string>("");
@@ -318,6 +325,15 @@ export default function App() {
       })
     );
   }, [lldpLabelMode]);
+
+  // Fabric Topology and the inline quick-tool panels (LLDP map, RESTCONF,
+  // tenant history, …) both render in the console column. Opening any
+  // quick tool sets quickActive, so close the Fabric Topology diagram when
+  // that happens — keeps the console showing one widget at a time without
+  // having to edit every quick-tool opener.
+  useEffect(() => {
+    if (quickActive) setFabricTopoOpen(false);
+  }, [quickActive]);
 
   const [resp, setResp] = useState<NLResp | null>(null);
 
@@ -1048,6 +1064,18 @@ async function randomExample() {
     setIfaceDetailWidgetOpen(false);
     setFabricsHealthWidgetOpen(false);
     setFabricHealthWidgetOpen(false);
+    setFabricTopoOpen(false);
+  }
+
+  // Open the read-only Fabric Topology diagram. Close every tier-3 widget
+  // first (CLAUDE.md modal-stacking rule), then open with an optional
+  // pre-selected fabric (NL "show topology for <fabric>"); empty → picker.
+  function handleOpenFabricTopology(fabricName?: string) {
+    closeAllTier3Widgets();
+    setQuickActive("");
+    setFabricTopoName(fabricName || "");
+    setFabricTopoOpen(true);
+    setActiveTab("console");
   }
 
   /** Close every tier-2 result widget pinned to the AI Console.
@@ -1770,6 +1798,17 @@ async function randomExample() {
         setIncludeRaw(true);
         await buildLldpTopology(seedIp, depth);
       }
+      return;
+    }
+    // ── Fabric topology intent ────────────────────────────────────────────────
+    // "show topology" / "fabric topology" / "show topology for <fabric>"
+    // (no switch IP, no "lldp") opens the read-only FabricTopologyView. The
+    // detector returns no-match for LLDP / IP-seeded prompts so the existing
+    // LLDP map flow above keeps its cases.
+    const fabricTopoIntent = detectFabricTopologyIntent(text);
+    if (fabricTopoIntent.matched) {
+      setNlRunning(false); // handled outside the NL pipeline
+      handleOpenFabricTopology(fabricTopoIntent.fabricName || undefined);
       return;
     }
     // ── Direct tool name detection ────────────────────────────────────────────
@@ -3740,6 +3779,20 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
 </button>
 
 <button
+  className="w-full rounded-md px-3 py-2 mt-2"
+  style={{
+    background: fabricTopoOpen ? "var(--accent)" : "transparent",
+    border: "1px solid var(--border)",
+    color: fabricTopoOpen ? "#0b0b0f" : "var(--text)",
+    fontWeight: fabricTopoOpen ? 700 : 400,
+  }}
+  disabled={nlRunning}
+  onClick={() => handleOpenFabricTopology()}
+>
+  Fabric Topology
+</button>
+
+<button
   className="w-full rounded-md px-3 py-2 mb-2 mt-2"
   style={{
     background: quickActive === "restconf" ? "var(--accent)" : "transparent",
@@ -4286,6 +4339,21 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
   </div>
   );
 })()}
+
+{/* ── Fabric Topology (read-only Clos diagram) ───────────────────── */}
+{/* FabricTopologyView — extracted to features/fabric/FabricTopologyView.tsx.
+    Parent owns open + selected fabric; the component fetches + parses +
+    renders the ReactFlow graph. */}
+{fabricTopoOpen ? (
+  <div style={{ marginTop: 12 }}>
+    <FabricTopologyView
+      open={fabricTopoOpen}
+      fabricName={fabricTopoName}
+      onPickFabric={(name) => setFabricTopoName(name)}
+      onClose={() => { setFabricTopoOpen(false); setFabricTopoName(""); }}
+    />
+  </div>
+) : null}
 
 {/* ── Running-config CLI Widget ─────────────────────────────────── */}
 {/* Running Config — see features/widgets/RunningConfigWidget.tsx. */}
