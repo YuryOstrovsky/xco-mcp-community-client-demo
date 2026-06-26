@@ -13,7 +13,6 @@ trigger_keywords:
   - can I upgrade
   - safe to upgrade
 allowed_tools:
-  - run_xco_probe
   - fabric_get_fabrics
   - fabric_get_fabrics_health
   - fabric_get_fabric_overview

@@ -67,19 +67,9 @@ ROUTES: List[Tuple[re.Pattern, str]] = [
     (re.compile(r"\binventory\s+(fleet|chassis|hardware)(?:\s+(info|information|report|export))?\b", re.I), "inventory_getswitches"),
     (re.compile(r"\binventory\s+(of\s+switches|report|export)\b", re.I), "inventory_getswitches"),
 
-    # ── xco_health ───────────────────────────────────────────────────────────
-    # MUST come first. Without this, the LLM router happily picks
-    # `restconf_get_vrf_summary` when an operator types "is xco healthy".
-    # The matching mirror lives in App.tsx::detectXcoHealthIntent — NL
-    # routing has TWO layers, so keep both in sync.
-    # Note: this routes to `list_xco_probes` (cheap, no required args) so
-    # the LLM has a non-VRF fallback path. The UI dispatch uses
-    # `force_tool: run_xco_probe` + `force_inputs: {probe_name: ...}`
-    # to actually run a probe; the deterministic ROUTES table can't
-    # supply those args, so it picks the metadata-only tool instead.
-    (re.compile(r"\bxco\b.{0,40}\b(health|healthy|status|probe|service|services|wedge|stuck)\b", re.I), "list_xco_probes"),
-    (re.compile(r"\b(probe|check|test|verify)\b.{0,40}\bxco\b", re.I), "list_xco_probes"),
-    (re.compile(r"\b(probe|check|test)\b.{0,40}\bfirmware[\s_-]?orchestration\b", re.I), "list_xco_probes"),
+    # (XCO platform-health probes are not part of the community edition —
+    # the run_xco_probe / list_xco_probes tools are excluded from the
+    # community server, so there is no xco-health route.)
     # Tenants
     (re.compile(r"\b(show|get)\s+tenant\s+.+\b(details?|info|summary)\b", re.I), "tenant_get_tenant"),
     # EPG term: epg(s), endpoint group(s), end point group(s), endpointgroup(s), endpoint-group(s)

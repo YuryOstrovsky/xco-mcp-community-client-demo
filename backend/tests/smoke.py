@@ -67,7 +67,7 @@ def _ok_agent_skills(d: Any) -> Optional[str]:
     if not isinstance(skills, list) or len(skills) < 1:
         return "expected non-empty 'skills' list"
     names = {s.get("name") for s in skills if isinstance(s, dict)}
-    must_have = {"fabric-health-investigation", "xco-health-check"}
+    must_have = {"fabric-health-investigation"}
     missing = must_have - names
     if missing:
         return f"missing required skill(s): {sorted(missing)}"
