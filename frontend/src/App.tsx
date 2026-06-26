@@ -4281,7 +4281,7 @@ async function buildLldpTopology(seedIp: string, depth: 1 | 2) {
   setTenantWidgetOpen={setTenantWidgetOpen}
   epgWidgetOpen={epgWidgetOpen}
   setEpgWidgetOpen={setEpgWidgetOpen}
-  onOpenFabricTopology={() => {}}
+  onOpenFabricTopology={handleOpenFabricTopology}
 />
 
 {/* ── Tenant EPG Historical Report Widget ──────────────────────────────── */}
