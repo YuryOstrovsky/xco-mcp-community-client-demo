@@ -1,0 +1,42 @@
+# docker-compose.yml — one-command bring-up for the XCO MCP Client
+# (community edition). Prereq: an auth-free community XCO MCP Server reachable
+# at MCP_BASE_URL (default assumes it runs on the Docker host at :8000).
+
+services:
+  xco-mcp-client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: xco-mcp-client-community:latest
+    container_name: xco-mcp-client
+    restart: unless-stopped
+    ports:
+      - "5174:5174"
+    environment:
+      # Point at the MCP server. "host.docker.internal" works on
+      # Docker Desktop (mac/win) and Linux with the extra_hosts entry below.
+      # Community edition: the community MCP server requires NO authentication
+      # (no OAuth2, no client id/secret). Just point at it.
+      MCP_BASE_URL: ${MCP_BASE_URL:-http://host.docker.internal:8000}
+      # Ollama (optional)
+      OLLAMA_ENABLED: ${OLLAMA_ENABLED:-0}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b-instruct}
+    # On Linux, this maps host.docker.internal to the host gateway.
+    # Docker Desktop on macOS/Windows sets this automatically; harmless there.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # Persist the audit log across container restarts.
+    # NOTE: mount the /app/data directory (not the file directly) —
+    # Docker volumes can only be mounted over directories.
+    volumes:
+      - audit-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:5174/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  audit-data:

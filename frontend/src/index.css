@@ -1,0 +1,267 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens — DARK theme (default).
+   These hex values are unchanged from before this commit, so any existing
+   inline-style code that references hardcoded greys/blues continues to render
+   byte-identically. The variables are the single source of truth for any
+   theme-aware code. */
+:root{
+  --bg0: #1E2230;            /* app background */
+  --bg1: #2B3142;            /* cards / panels */
+  --border: #3A4458;         /* subtle borders */
+  --text: #F8F8FB;           /* primary text */
+  --accent: #8B8FD8;         /* primary accent (muted lavender-blue) */
+  --accent-egress: #5B8A7D;  /* secondary accent (muted teal-green) */
+  --warn: #C17B4A;           /* high-traffic / warning (amber) */
+
+  /* Figma-derived tokens consumed by figmaStyles.ts (Panel, widgetContainer,
+     btnSecondary, etc.). Existing hex values preserved for byte-identical
+     dark mode. */
+  --container-bg:      #1e293b;   /* slate-800 — Panel surface */
+  --container-border:  #334155;   /* slate-700 */
+  --title-color:       #a5b4fc;   /* indigo-300 — widget titles */
+  --heading-color:     #e2e8f0;   /* slate-200 — section headings */
+  --body-color:        #e2e8f0;   /* slate-200 */
+  --subtitle-color:    #cbd5e1;   /* slate-300 */
+  --muted-color:       #94a3b8;   /* slate-400 */
+  --dim-color:         #64748b;   /* slate-500 */
+  --btn-secondary-border: #475569;
+  --btn-secondary-color:  #cbd5e1;
+  --btn-secondary-hover:  #334155;
+  --btn-ghost-hover-bg:   #334155;
+  --row-default-border:   #334155;
+  --row-hover-border:     #475569;
+  --row-hover-bg:         rgba(51,65,85,0.3);
+  --row-selected-bg:      rgba(51,65,85,0.5);
+  --row-selected-border:  #475569;
+  --subtle-bg:            rgba(255,255,255,0.03);
+  --subtle-border:        rgba(255,255,255,0.08);
+  --divider:              rgba(255,255,255,0.06);
+  --banner-bg:            rgba(51,65,85,0.3);
+  --banner-border:        rgba(71,85,105,0.5);
+
+  /* Indigo-tinted header band (Activity icon strip on Fabric Health
+     Summary etc.) and inner-nested card surface (slightly recessed
+     from the outer Panel). Existing dark-mode hex preserved. */
+  --header-tint-bg:    rgba(165,180,252,0.1);
+  --inner-card-bg:     rgba(15,23,42,0.5);
+  --inner-card-bg-2:   rgba(15,23,42,0.3);
+
+  /* Neutral SOLID buttons (Refresh, Reset Password, Approve, Reject,
+     filter dropdowns, status badges, avatar circles in Manage Users
+     / Change Plans / etc.). These widgets used a literal "#334155"
+     rest bg + "#475569" hover. Routed through tokens so light mode
+     gets a visible grey surface instead of a dark blob. */
+  --btn-neutral-bg:        #334155;
+  --btn-neutral-hover-bg:  #475569;
+}
+
+/* Design tokens — LIGHT theme (opt-in via class on <html>).
+   Mirrors the Figma Light_Theme/Dashboard.tsx shadcn token system —
+   white-ish background, near-black text, soft borders, same accent
+   purple keeps brand identity, slightly warmer warn for contrast on
+   white. */
+:root.theme-light{
+  --bg0: #F4F5F8;            /* light page background — slightly off-white so cards pop */
+  --bg1: #FFFFFF;            /* card / panel surface */
+  --border: #E2E5EC;         /* subtle borders on light bg */
+  --text: #1A1B23;           /* near-black primary text */
+  --accent: #6B66D4;         /* slightly darker purple — needs contrast on white */
+  --accent-egress: #3F7563;  /* darker teal for contrast */
+  --warn: #B86A38;           /* warmer amber, readable on white */
+
+  /* Figma-derived tokens — light variants */
+  --container-bg:      #FFFFFF;
+  --container-border:  #E2E5EC;
+  --title-color:       #6B66D4;   /* purple holds in both themes; slightly darkened */
+  --heading-color:     #1A1B23;
+  --body-color:        #1A1B23;
+  --subtitle-color:    #1A1B2390;
+  --muted-color:       #1A1B2370;
+  --dim-color:         #1A1B2350;
+  --btn-secondary-border: #D1D5DB;
+  --btn-secondary-color:  #1A1B23;
+  --btn-secondary-hover:  #F3F4F6;
+  --btn-ghost-hover-bg:   #F3F4F6;
+  --row-default-border:   #E2E5EC;
+  --row-hover-border:     #C7CCD6;
+  --row-hover-bg:         rgba(0,0,0,0.03);
+  --row-selected-bg:      rgba(107,102,212,0.08);
+  --row-selected-border:  rgba(107,102,212,0.35);
+  /* Bumped from 0.02 -> 0.05 so chips/badges that map bg-slate-700/50
+     to --subtle-bg actually render visibly on white surfaces. */
+  --subtle-bg:            rgba(0,0,0,0.05);
+  --subtle-border:        rgba(0,0,0,0.08);
+  --divider:              rgba(0,0,0,0.06);
+  --banner-bg:            rgba(0,0,0,0.025);
+  --banner-border:        rgba(0,0,0,0.08);
+
+  /* Light variants — header tint uses the same indigo accent as dark
+     but at lower alpha; inner cards are a very subtle off-white so
+     they read as recessed against the white panel. */
+  --header-tint-bg:    rgba(107,102,212,0.06);
+  --inner-card-bg:     rgba(0,0,0,0.025);
+  --inner-card-bg-2:   rgba(0,0,0,0.015);
+
+  /* Light variants for neutral buttons — gray-200 rest, gray-300 hover.
+     Visible but neutral surface; pairs with --btn-secondary-color
+     (#1A1B23) for legible text. */
+  --btn-neutral-bg:        #E5E7EB;
+  --btn-neutral-hover-bg:  #D1D5DB;
+}
+
+html, body { height: 100%; }
+body{
+  margin: 0;
+  background: var(--bg0);
+  color: var(--text);
+  font-family: "Source Sans Pro", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Light-theme overrides for Tailwind utility classes used by widgets that
+   were authored with dark assumptions (Alarm Details, Tenant History, etc.).
+   Selector specificity (compound `.theme-light .X`) beats Tailwind's single
+   `.X` so these override only when the light theme is active. Dark mode
+   keeps the original Tailwind slate colors untouched.
+   ───────────────────────────────────────────────────────────────────────── */
+:root.theme-light .bg-slate-800,
+:root.theme-light .bg-slate-900,
+:root.theme-light .bg-slate-900\/50,
+:root.theme-light .bg-slate-900\/40 { background-color: var(--container-bg) !important; }
+
+:root.theme-light .bg-slate-700,
+:root.theme-light .bg-slate-700\/50 { background-color: var(--subtle-bg) !important; }
+
+:root.theme-light .border-slate-700,
+:root.theme-light .border-slate-600,
+:root.theme-light .border-slate-700\/50 { border-color: var(--container-border) !important; }
+
+:root.theme-light .text-slate-100,
+:root.theme-light .text-slate-200 { color: var(--heading-color) !important; }
+:root.theme-light .text-slate-300 { color: var(--subtitle-color) !important; }
+:root.theme-light .text-slate-400 { color: var(--muted-color) !important; }
+:root.theme-light .text-slate-500 { color: var(--dim-color) !important; }
+
+/* Severity tints — keep the same hue but increase opacity / saturation
+   slightly on light bg so they don't wash out. */
+:root.theme-light .bg-yellow-500\/10 { background-color: rgba(202,138,4,0.10) !important; }
+:root.theme-light .border-yellow-500\/30 { border-color: rgba(202,138,4,0.40) !important; }
+:root.theme-light .text-yellow-400 { color: #b45309 !important; }
+:root.theme-light .text-yellow-400\/90 { color: rgba(180,83,9,0.95) !important; }
+
+:root.theme-light .text-green-400 { color: #047857 !important; }
+:root.theme-light .text-red-400 { color: #b91c1c !important; }
+
+/* Indigo accents (active-tab borders, header tints) — slightly darker on light bg */
+:root.theme-light .border-indigo-400 { border-color: var(--accent) !important; }
+:root.theme-light .bg-indigo-300\/10 { background-color: rgba(107,102,212,0.06) !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Cross-Fabric Architecture view animations.
+   - arch-dash-march-up: dashed line dashes appear to flow upward (used on
+     Telemetry / Aggregated Insights arrows so they feel "live").
+   - arch-flow-down: a brighter scanline travels downward along the solid
+     Policy/Intent stem (meteor effect).
+   - arch-pulse-dot: subtle scale + opacity pulse on health indicator dots.
+   - arch-glow: slow box-shadow pulse on the MCP Federation Layer card.
+   - arch-fabric-active: accent ring pulse around a fabric mini-topo
+     while a plan is executing against it.
+   All durations are intentionally on the slow side (1.5s+) so the
+   animations read as ambient motion, not nervous twitching.
+   ───────────────────────────────────────────────────────────────────────── */
+@keyframes arch-dash-march-up {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -16; }
+}
+@keyframes arch-dash-march-down {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: 16; }
+}
+@keyframes arch-flow-down {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+@keyframes arch-pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.65; transform: scale(1.18); }
+}
+@keyframes arch-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139,143,216,0.18); }
+  50%      { box-shadow: 0 0 28px 4px rgba(139,143,216,0.30); }
+}
+/* brain-breathe: subtle scale pulse on the AI Reasoning brain — matches
+   the new Figma "Brain_new" design where the brain container breathes
+   between 1.0 and 1.03 over 4s. Same period/easing as arch-glow so the
+   two animations feel coupled rather than fighting each other. */
+@keyframes brain-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.03); }
+}
+/* brain-sparkle: animated star-like glints overlaid on the AI Reasoning
+   brain — copied verbatim from FIGMA/Brain_new2 (opacity + box-shadow
+   pulses across 4 keyframes, with `filter: blur` softening). The
+   .brain-star-dot helper sets the 1×1 px dot, and brain-sparkle-1/2/3
+   are three durations / built-in delays so a cluster of dots reads as
+   organic rather than synchronized. */
+@keyframes brain-sparkle {
+  0%, 100% {
+    opacity: 0.6;
+    filter: blur(0.5px);
+    box-shadow:
+      0 0 2px 1px rgba(255,255,255,0.8),
+      0 0 4px 2px rgba(255,255,255,0.6),
+      0 0 8px 3px rgba(255,255,255,0.4),
+      0 0 12px 4px rgba(255,255,255,0.2);
+  }
+  25% {
+    opacity: 1;
+    filter: blur(0.3px);
+    box-shadow:
+      0 0 3px 2px rgba(255,255,255,1),
+      0 0 6px 3px rgba(255,255,255,0.8),
+      0 0 12px 5px rgba(255,255,255,0.6),
+      0 0 18px 7px rgba(255,255,255,0.3);
+  }
+  50% {
+    opacity: 0.4;
+    filter: blur(0.6px);
+    box-shadow:
+      0 0 1px 1px rgba(255,255,255,0.6),
+      0 0 3px 2px rgba(255,255,255,0.4),
+      0 0 6px 3px rgba(255,255,255,0.2);
+  }
+  75% {
+    opacity: 0.9;
+    filter: blur(0.4px);
+    box-shadow:
+      0 0 2px 1px rgba(255,255,255,0.9),
+      0 0 5px 3px rgba(255,255,255,0.7),
+      0 0 10px 4px rgba(255,255,255,0.5),
+      0 0 15px 6px rgba(255,255,255,0.25);
+  }
+}
+.brain-star-dot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  background-color: white;
+  border-radius: 50%;
+}
+.brain-sparkle-1 { animation: brain-sparkle 3s   ease-in-out infinite; }
+.brain-sparkle-2 { animation: brain-sparkle 2.5s ease-in-out infinite 0.5s; }
+.brain-sparkle-3 { animation: brain-sparkle 3.2s ease-in-out infinite 1s; }
+@keyframes arch-fabric-active {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139,143,216,0.0); }
+  50%      { box-shadow: 0 0 0 4px rgba(139,143,216,0.30); }
+}
+/* Pause animations when the user prefers reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .arch-anim, .arch-anim * { animation: none !important; }
+}
+

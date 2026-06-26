@@ -1,0 +1,88 @@
+# Keep the Docker build context lean & secret-free.
+# Everything listed here is EXCLUDED from the image build.
+
+# ── Secrets / local state ────────────────────────────────────────────────────
+**/.env
+**/.env.*
+!**/.env.example
+backend/audit.log
+**/*.log
+# Runtime state databases — must not be baked into the image
+backend/ambient_tasks.db
+backend/health_watcher.db
+# Runtime usage logs
+backend/openai_usage.jsonl
+# Operator-modified config (seed values live in the codebase; runtime
+# writes must come from the mounted volume, never the image)
+backend/client_settings.json
+
+# ── Python build artifacts / venvs ──────────────────────────────────────────
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.venv/
+**/venv/
+**/*.egg-info/
+
+# ── Node / Vite build artifacts (built inside container) ────────────────────
+frontend/node_modules/
+frontend/dist/
+**/npm-debug.log*
+**/yarn-debug.log*
+**/pnpm-debug.log*
+
+# Tests don't ship in the runtime image — pytest runs in CI, not in prod
+backend/tests/
+backend/pytest.ini
+**/.pytest_cache/
+
+# ── Reference / design material not needed at runtime ───────────────────────
+FIGMA/
+backend/mcp_tools.json
+backend/openapi_mcp_invoke.yaml
+backend/TOOL_CATALOG.md
+backend/XCO_MCP_*.docx
+backend/XCO_MCP_*.xlsx
+backend/README.md
+frontend/README.md
+frontend/index.html.bak
+
+# ── Project-level docs / scripts not shipped in the image ───────────────────
+MCP_CLIENT_HANDOFF.md
+MCP_SERVER_BUG_NOTES.md
+MCP_SERVER_PLAN_BUILDER_REQUEST.md
+push.sh
+tmp/
+# Server-team communication drafts (MSG_*/REPLY_*/REQUEST_*) + any other
+# local docs — never part of the running image. (Belt-and-suspenders: the
+# Dockerfile only COPYs backend/ + frontend/, so root docs/ is already out.)
+docs/
+
+# ── Git / IDE / OS noise ────────────────────────────────────────────────────
+.git/
+.gitignore
+.gitattributes
+.github/
+.vscode/
+.idea/
+.claude/
+.DS_Store
+*.swp
+Thumbs.db
+
+# ── Docker artifacts (don't need to re-copy) ────────────────────────────────
+Dockerfile
+.dockerignore
+docker-compose.yml
+DOCKER.md
+
+# ── Build-output artifacts + large local files (keep the context lean) ──────
+# The saved-image tarballs live here; never send them back into the context.
+docker-dist/
+*.tar
+*.tar.gz
+# Local scratch logs / editor swap (e.g. logs.ttt, .temp.ttt.swp)
+*.ttt
+# Root-level node_modules (frontend/node_modules already excluded above)
+/node_modules/

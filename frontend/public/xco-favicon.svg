@@ -1,0 +1,47 @@
+<svg width="64" height="64" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7C3AED" />
+      <stop offset="100%" stop-color="#5B21B6" />
+    </linearGradient>
+    <linearGradient id="nodeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A78BFA" />
+      <stop offset="100%" stop-color="#8B5CF6" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Rounded square background -->
+  <rect width="32" height="32" rx="6" fill="url(#bgGradient)" />
+  
+  <!-- Abstract fabric network pattern - represents IP Fabric -->
+  <!-- Connection lines -->
+  <path d="M 8 16 L 16 8 M 16 8 L 24 16 M 24 16 L 16 24 M 16 24 L 8 16" stroke="#E9D5FF" stroke-width="1.5" stroke-opacity="0.4" stroke-linecap="round" />
+  
+  <!-- Horizontal fabric line -->
+  <line x1="8" y1="16" x2="24" y2="16" stroke="#E9D5FF" stroke-width="1.5" stroke-opacity="0.4" stroke-linecap="round" />
+  
+  <!-- Vertical fabric line -->
+  <line x1="16" y1="8" x2="16" y2="24" stroke="#E9D5FF" stroke-width="1.5" stroke-opacity="0.4" stroke-linecap="round" />
+  
+  <!-- Network nodes representing switches -->
+  <!-- Center node - main orchestrator -->
+  <circle cx="16" cy="16" r="3" fill="url(#nodeGradient)" />
+  <circle cx="16" cy="16" r="3" fill="white" fill-opacity="0.3" />
+  
+  <!-- Corner nodes - fabric switches -->
+  <circle cx="8" cy="16" r="2" fill="url(#nodeGradient)" />
+  <circle cx="8" cy="16" r="2" fill="white" fill-opacity="0.3" />
+  
+  <circle cx="24" cy="16" r="2" fill="url(#nodeGradient)" />
+  <circle cx="24" cy="16" r="2" fill="white" fill-opacity="0.3" />
+  
+  <circle cx="16" cy="8" r="2" fill="url(#nodeGradient)" />
+  <circle cx="16" cy="8" r="2" fill="white" fill-opacity="0.3" />
+  
+  <circle cx="16" cy="24" r="2" fill="url(#nodeGradient)" />
+  <circle cx="16" cy="24" r="2" fill="white" fill-opacity="0.3" />
+  
+  <!-- Inner connection highlights -->
+  <circle cx="16" cy="16" r="1" fill="white" fill-opacity="0.9" />
+</svg>
