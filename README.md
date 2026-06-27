@@ -24,6 +24,16 @@ a Tier-1/Tier-2 SAFE_READ MCP server that requires no login.
 > - **Read-only & auth-free** — no mutations, no login. See
 >   [COMMUNITY.md](COMMUNITY.md) for scope.
 
+> ## ⚠️ Network exposure warning
+>
+> This demo client has **no login, no users, no roles, and no authorization layer**.
+>
+> Anyone who can reach the web UI can browse tools, change client-side settings where exposed, and invoke read-only MCP calls through the configured community MCP server.
+>
+> Run it only on **localhost or a trusted management network**. If exposing it beyond localhost, place it behind an authenticated reverse proxy, VPN, or other access-control layer.
+>
+> If OpenAI is enabled, users with access to this UI may trigger OpenAI API usage.
+
 ---
 
 ## What it does
@@ -71,14 +81,14 @@ npm run dev
 
 Open the UI — it boots straight into the dashboard (no login screen).
 
-For a production container, see **[DEPLOY.md](DEPLOY.md)** (single image, no
-credentials).
+For a deployable container, see **[DEPLOY.md](DEPLOY.md)** (single image; no
+credentials baked into the image).
 
 ## Configuration
 
 | Variable | Default | Notes |
 |---|---|---|
-| `MCP_BASE_URL` | `http://127.0.0.1:8000` | The community MCP server. **No credentials.** |
+| `MCP_BASE_URL` | `http://127.0.0.1:8000` | The community MCP server. The client sends **no `Authorization` header**. |
 | `OLLAMA_ENABLED` / `OLLAMA_BASE_URL` / `OLLAMA_MODEL` | off | Optional local-LLM NL fallback. |
 | `OPENAI_API_KEY` / `OPENAI_MODEL` | — | Optional cloud LLM for NL routing/explain (also settable in the UI → **Server Settings**). |
 
@@ -122,3 +132,7 @@ including Extreme Networks GTAC.** Use entirely at your own risk.
 
 Requires the **community XCO MCP server** to run against:
 **https://github.com/YuryOstrovsky/xco-mcp-community-server**
+
+## License
+
+Licensed under the [Apache License 2.0](LICENSE).

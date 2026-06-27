@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-06-26T15:28:13.610557Z",
-  "count": 266,
+  "generated_at": "2026-06-26T23:45:46.242385Z",
+  "count": 270,
   "tools": [
     {
       "name": "inventory_getswitches",
-      "description": "Get switches",
+      "description": "Lists all switches in inventory with chassis_name, management ip_address, fabric, firmware and health (optionally filtered by fabric-id or id). Use this to resolve a switch NAME (e.g. 'Spine-1') to its management IP before calling per-device tools (BGP, interfaces, running-config, etc.).",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -164,7 +164,7 @@
         "properties": {
           "fabric_name": {
             "type": "string",
-            "description": "Fabric whose PHYSICAL topology (real per-port switch\u2194switch links) to fetch. Snake `fabric_name` or hyphenated `fabric-name` both accepted."
+            "description": "Fabric whose PHYSICAL topology (real per-port switch↔switch links) to fetch. Snake `fabric_name` or hyphenated `fabric-name` both accepted."
           },
           "site": {
             "type": "string",
@@ -1765,7 +1765,7 @@
     },
     {
       "name": "inventory_get_router_bgp",
-      "description": "getRouterBgp",
+      "description": "Get the BGP configuration and operational summary for a device — local AS, router-id, peer groups, neighbors (remote-AS, BFD), and per-VRF address-family state. Target the device by management IP (device_ip) or device_id. Use this to answer \"show BGP summary\" / BGP status for a switch.",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -5329,7 +5329,7 @@
     },
     {
       "name": "restconf_get_arp_table",
-      "description": "Tier-2: Show ARP table (IP\u2192MAC\u2192interface) via RESTCONF RPC (brocade-arp:get-arp).",
+      "description": "Tier-2: Show ARP table (IP→MAC→interface) via RESTCONF RPC (brocade-arp:get-arp).",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -5584,7 +5584,7 @@
     },
     {
       "name": "restconf_get_running_config",
-      "description": "Tier-2: Retrieve a running configuration snapshot via SLX /rest/config/running (vendor XML). Returns top-level config sections + key identity fields (hostname/chassis).",
+      "description": "Tier-2: Retrieve a running configuration SNAPSHOT via SLX /rest/config/running (vendor XML) - the static device configuration TEXT, NOT live operational state. Returns top-level config sections + identity fields (hostname/chassis). Do NOT use this to check status: for BGP session status use restconf",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -5750,7 +5750,7 @@
     },
     {
       "name": "inventory_list_device_ids",
-      "description": "Tier-2 SAFE_READ composite \u2014 the PAIRED LIST for device-id-required inventory tools. Returns device_ids[] + devices[{device_id, ip, hostname}] in clean snake_case so a client can feed an id straight into device_id-required tools (e.g. inventory_switch_inventory_info) without hard-coding a cached sam",
+      "description": "Tier-2 SAFE_READ composite — the PAIRED LIST for device-id-required inventory tools. Returns device_ids[] + devices[{device_id, ip, hostname}] in clean snake_case so a client can feed an id straight into device_id-required tools (e.g. inventory_switch_inventory_info) without hard-coding a cached sam",
       "input_schema": {
         "type": "object",
         "properties": {},
@@ -5759,7 +5759,7 @@
     },
     {
       "name": "tenant_list_ids",
-      "description": "Tier-2 SAFE_READ composite \u2014 the PAIRED LIST for tenant-required tenant tools. Returns tenant_ids[] + tenants[{tenant_id, tenant_name}] in clean snake_case so a client never hard-codes a tenant name from a cached sample. Composes over tier-1 tenant_get_tenants.",
+      "description": "Tier-2 SAFE_READ composite — the PAIRED LIST for tenant-required tenant tools. Returns tenant_ids[] + tenants[{tenant_id, tenant_name}] in clean snake_case so a client never hard-codes a tenant name from a cached sample. Composes over tier-1 tenant_get_tenants.",
       "input_schema": {
         "type": "object",
         "properties": {},
@@ -5768,7 +5768,7 @@
     },
     {
       "name": "fabric_get_fabric_names",
-      "description": "Tier-2 SAFE_READ composite \u2014 lightweight fabric discovery: list fabric NAMES (and ids) in clean snake_case (fabric_name, fabric_id), ready to feed into ID-dependent tools like fabric_get_overlay_topology(fabric_name=...). Pairs with the heavier fabric_get_fabrics so a consumer does not have to hand-",
+      "description": "Tier-2 SAFE_READ composite — lightweight fabric discovery: list fabric NAMES (and ids) in clean snake_case (fabric_name, fabric_id), ready to feed into ID-dependent tools like fabric_get_overlay_topology(fabric_name=...). Pairs with the heavier fabric_get_fabrics so a consumer does not have to hand-",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -5779,6 +5779,159 @@
           }
         },
         "required": []
+      }
+    },
+    {
+      "name": "restconf_get_bgp_summary",
+      "description": "Tier-2 (read-only): LIVE BGP session status per SLX switch via SSH (show ip bgp summary / show bgp evpn summary). This is the tool to answer 'check BGP status for switch X'. Returns per-neighbor state (ESTAB/IDLE/CONNECT/ACTIVE), uptime, prefixes-accepted, remote-AS and address-family (IPv4-unicast ",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "switch_ips": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Switch IPs to query (a single string is also accepted). OR use switch_names / fabric_name."
+          },
+          "switch_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Switch name(s) / chassis_name (e.g. 'Spine-1'; a single string is also accepted) - auto-resolved to management IPs via inventory_getswitches. Use this when the user refers to a switch by name."
+          },
+          "fabric_name": {
+            "type": "string",
+            "description": "Fabric name — auto-discovers all member switches (via fabric_get_devices)."
+          },
+          "username": {
+            "type": "string",
+            "description": "Optional SSH username (default: RESTCONF_USERNAME env)."
+          },
+          "password": {
+            "type": "string",
+            "description": "Optional SSH password (default: RESTCONF_PASSWORD env)."
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "firmware_check_storage",
+      "description": "Tier-2 (read-only): firmware pre-flight storage check. SSHs to each switch and runs `dir` + `show support` to report total/free flash (MB), whether free space is sufficient for a firmware download (>= 2000 MB), and whether core/FFDC files are present. Read-only — makes no changes. Requires switch SS",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "device_ips": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Switch IPs to check (a single string is also accepted)."
+          },
+          "username": {
+            "type": "string",
+            "description": "Optional SSH username (default: RESTCONF_USERNAME env)."
+          },
+          "password": {
+            "type": "string",
+            "description": "Optional SSH password (default: RESTCONF_PASSWORD env)."
+          }
+        },
+        "required": [
+          "device_ips"
+        ]
+      }
+    },
+    {
+      "name": "inventory_get_chassis_info_bulk",
+      "description": "Tier-2 (read-only): fleet-wide chassis identity export from XCO — one row per switch with hostname, IP, site, OS version, SERIAL NUMBER and part number (the same data XCO's 'Download Inventory' button produces, via inventory-bulk-export). One XCO call covers the whole fleet. Optional device_ids to s",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "device_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Optional integer device IDs (from inventory_getswitches.id / inventory_list_device_ids). Omit to auto-expand to all switches."
+          },
+          "max_devices": {
+            "type": "integer",
+            "default": 500,
+            "minimum": 1,
+            "description": "Safety cap on auto-expansion; if the site has more switches than this, returns 400 — pass an explicit device_ids list."
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "restconf_slx_get_mac_address_table",
+      "description": "Tier-2 (read-only): MAC-address-table per SLX switch via the `show mac-address-table` CLI (SLX RESTCONF exposes only config, not learned MACs). Returns per entry: vlan, mac (normalized), type, state, interface. Optional filters: mac_filter, vlan_filter (exact int), interface_filter. switch_ip accept",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "switch_ip": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              }
+            ],
+            "description": "Management IP of the SLX switch. A single string (single-switch shape) OR a list (multi-switch fan-out shape: meta.multi_switch=true, switch_level_data_by_ip, errors_by_ip)."
+          },
+          "mac_filter": {
+            "type": "string",
+            "description": "Optional MAC filter: full MAC in any form (0011.2233.4455, 00:11:.., 00-11-.., bare hex) for exact match, or a substring (case-insensitive)."
+          },
+          "vlan_filter": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4094,
+            "description": "Optional exact VLAN ID filter (pushes down to `show mac-address-table vlan N`)."
+          },
+          "interface_filter": {
+            "type": "string",
+            "description": "Optional interface substring filter (e.g. '0/51', 'ethernet 0/51', 'Eth 0/51'). Case-insensitive."
+          },
+          "max_items": {
+            "type": "integer",
+            "default": 200,
+            "minimum": 1,
+            "description": "Max items after filtering. summary.truncated reflects whether the cap was hit."
+          },
+          "include_raw": {
+            "type": "boolean",
+            "default": false,
+            "description": "If true, include raw `show mac-address-table` output under raw.show_mac_address_table."
+          },
+          "ssh_timeout": {
+            "type": "integer",
+            "default": 20,
+            "minimum": 5,
+            "maximum": 120,
+            "description": "Per-command SSH idle timeout (seconds)."
+          },
+          "username": {
+            "type": "string",
+            "description": "Optional SSH username (default: RESTCONF_USERNAME env)."
+          },
+          "password": {
+            "type": "string",
+            "description": "Optional SSH password (default: RESTCONF_PASSWORD env)."
+          }
+        },
+        "required": [
+          "switch_ip"
+        ]
       }
     }
   ]

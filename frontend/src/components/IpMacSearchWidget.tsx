@@ -30,13 +30,11 @@
 //   - invokeToolTypedWithSite(tool, inputs, siteId) → invokeToolTyped(
 //     tool, inputs). This client is single-site; there's no site
 //     routing key, so the third arg + the siteId prop are dropped.
-//   - restconf_slx_get_mac_address_table is NOT in the community MCP
-//     catalog. The MAC / VLAN / port-MAC lookups degrade gracefully:
-//     the MAC-table branches surface a "MAC table unavailable on this
-//     server" notice instead of crashing, and IP/ARP search (plus the
-//     port→ARP fallback) keeps working. Flip MAC_TABLE_AVAILABLE to
-//     true (and restore the typed calls) if the server later exposes
-//     the MAC-address-table tool.
+//   - MAC-table availability is detected from the generated catalog
+//     (MAC_TABLE_AVAILABLE). When the server exposes
+//     restconf_slx_get_mac_address_table, MAC / VLAN / port lookups use
+//     it; when it is absent they degrade gracefully to ARP (with a
+//     notice), so IP/ARP search keeps working against any server.
 //
 // Style discipline: neutral surfaces, dots and small chips as the only
 // accent, FG.* tokens throughout.
@@ -50,15 +48,19 @@ import {
   Chip, ReadinessBanner, sectionLabel, tableStyles,
 } from "../lib/widgetPrimitives";
 import { invokeToolTyped } from "../lib/typedInvoke";
+import { TOOL_NAMES } from "../lib/generated/tools.gen";
 // MAC-format helpers. Single source of truth — same module the Compass
 // NL parser reads.
 import { isExactlyMac } from "../lib/nl/macFormats";
 
-// restconf_slx_get_mac_address_table is absent from the community MCP
-// catalog. When false, MAC / VLAN / port-MAC lookups short-circuit with
-// a friendly notice rather than calling a nonexistent tool (which would
-// also fail to type-check against the generated ToolName union).
-const MAC_TABLE_AVAILABLE = false;
+// Whether the server exposes the SLX MAC-address-table tool. Derived from
+// the generated catalog (refreshed from the live server via `npm run
+// sync-tools`), so this client adapts to whatever server it is built
+// against: MAC / VLAN / port lookups use the tool when present and fall
+// back to ARP (with a notice) when it is absent.
+const MAC_TABLE_AVAILABLE = (TOOL_NAMES as readonly string[]).includes(
+  "restconf_slx_get_mac_address_table",
+);
 const MAC_UNAVAILABLE_MSG =
   "MAC table unavailable on this server (restconf_slx_get_mac_address_table is not in the catalog).";
 
@@ -298,44 +300,87 @@ export function IpMacSearchWidget(props: IpMacSearchWidgetProps) {
         const inner = (resp as any)?.result?.payload ?? resp;
         setArp(inner as MultiSwitchResp<ArpItem>);
 
-        // SVI chase — if any entry's interface is "Ve N", we'd normally
-        // look up the MAC in the MAC table to find the access port.
-        // The MAC table tool is absent on this server, so we note the
-        // limitation instead. The ARP entry (with the SVI interface +
-        // resolved MAC) still renders below.
+        // SVI chase — if any ARP entry's interface is "Ve N", look up the
+        // resolved MAC in the MAC table to find the real access port (when
+        // the MAC tool is available; otherwise note the limitation — the
+        // ARP entry with the SVI interface + resolved MAC still renders).
         const sviItems = ((inner as any)?.items || []).filter(
           (it: ArpItem) => /^Ve\s+\d+$/i.test((it.interface || "").trim()),
         );
-        if (sviItems.length > 0 && !MAC_TABLE_AVAILABLE) {
-          setNotice(
-            `Found via ARP on an SVI (${sviItems[0].interface}). The access-port chase needs the MAC table, which is unavailable on this server — the resolved MAC is shown in the ARP row below.`,
-          );
+        if (sviItems.length > 0) {
+          if (MAC_TABLE_AVAILABLE) {
+            const macToChase = sviItems[0].mac_address;
+            if (macToChase) {
+              const chaseResp = await invokeToolTyped(
+                "restconf_slx_get_mac_address_table",
+                { switch_ip: swIpInput as any, mac_filter: macToChase } as any,
+              );
+              const chaseInner = (chaseResp as any)?.result?.payload ?? chaseResp;
+              setSviChase(chaseInner as MultiSwitchResp<MacItem>);
+            }
+          } else {
+            setNotice(
+              `Found via ARP on an SVI (${sviItems[0].interface}). The access-port chase needs the MAC table, which is unavailable on this server — the resolved MAC is shown in the ARP row below.`,
+            );
+          }
         }
-      } else if (kind === "mac" || kind === "vlan") {
-        // MAC / VLAN lookups go through the MAC table — unavailable here.
-        if (!MAC_TABLE_AVAILABLE) {
+      } else if (kind === "mac") {
+        if (MAC_TABLE_AVAILABLE) {
+          const resp = await invokeToolTyped(
+            "restconf_slx_get_mac_address_table",
+            { switch_ip: swIpInput as any, mac_filter: q } as any,
+          );
+          const inner = (resp as any)?.result?.payload ?? resp;
+          setMac(inner as MultiSwitchResp<MacItem>);
+        } else {
+          setNotice(MAC_UNAVAILABLE_MSG);
+          setMac({ items: [] } as MultiSwitchResp<MacItem>);
+        }
+      } else if (kind === "vlan") {
+        if (MAC_TABLE_AVAILABLE) {
+          const resp = await invokeToolTyped(
+            "restconf_slx_get_mac_address_table",
+            { switch_ip: swIpInput as any, vlan_filter: parseInt(q, 10) } as any,
+          );
+          const inner = (resp as any)?.result?.payload ?? resp;
+          setMac(inner as MultiSwitchResp<MacItem>);
+        } else {
           setNotice(MAC_UNAVAILABLE_MSG);
           setMac({ items: [] } as MultiSwitchResp<MacItem>);
         }
       } else if (kind === "port") {
-        // PORT mode: normally fires MAC table AND ARP in parallel. The
-        // MAC table is unavailable on this server, so we run ARP only
-        // and filter client-side. SLX labs routinely have empty MAC
-        // tables anyway — operator's "what's on this port" intent is
-        // usually satisfied by ARP for L3-attached hosts.
+        // PORT mode: fire MAC table AND ARP in parallel when the MAC tool
+        // is available; otherwise fall back to ARP only and filter
+        // client-side. SLX labs routinely have empty MAC tables but
+        // populated ARP, so the "what's on this port" intent is usually
+        // satisfied either way.
         const portN = normalizePort(q);
-        if (!MAC_TABLE_AVAILABLE) {
+        let arpInner: any;
+        if (MAC_TABLE_AVAILABLE) {
+          const [macResp, arpResp] = await Promise.all([
+            invokeToolTyped(
+              "restconf_slx_get_mac_address_table",
+              { switch_ip: swIpInput as any, interface_filter: portN } as any,
+            ),
+            invokeToolTyped(
+              "restconf_get_arp_table",
+              { switch_ip: swIpInput as any } as any,
+            ),
+          ]);
+          const macInner = (macResp as any)?.result?.payload ?? macResp;
+          arpInner = (arpResp as any)?.result?.payload ?? arpResp;
+          setMac(macInner as MultiSwitchResp<MacItem>);
+        } else {
           setNotice(
             "MAC table unavailable on this server — showing ARP entries for this port only.",
           );
+          const arpResp = await invokeToolTyped(
+            "restconf_get_arp_table",
+            { switch_ip: swIpInput as any } as any,
+          );
+          arpInner = (arpResp as any)?.result?.payload ?? arpResp;
+          setMac({ items: [] } as MultiSwitchResp<MacItem>);
         }
-        const arpResp = await invokeToolTyped(
-          "restconf_get_arp_table",
-          { switch_ip: swIpInput as any } as any,
-        );
-        const arpInner = (arpResp as any)?.result?.payload ?? arpResp;
-        // Leave `mac` null/empty — the MAC table is unavailable.
-        setMac({ items: [] } as MultiSwitchResp<MacItem>);
 
         // Filter ARP client-side: match interface_short directly or
         // confirm the full interface string ends with our port token.
