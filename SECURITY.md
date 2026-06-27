@@ -32,7 +32,10 @@ taken seriously.
 
 ## Good to know
 
-- The client sends **no credentials** to the MCP server and stores no secrets;
-  the only persisted state is an audit log and the (non-secret) MCP URL setting.
-- Optional LLM integrations (OpenAI / Ollama) use keys you supply via env or
-  the UI; those are never committed and are gitignored.
+- The client sends **no `Authorization` header** to the MCP server. The
+  image/repo must not contain baked-in credentials. Optional LLM integrations
+  (OpenAI / Ollama) may use API keys supplied via env or the UI; those are never
+  committed and are gitignored. Treat access to the UI and runtime data
+  directory as sensitive.
+- Persisted data may include audit logs and client settings. Treat `/app/data`
+  as operationally sensitive.
