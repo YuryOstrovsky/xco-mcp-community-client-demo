@@ -132,6 +132,7 @@ including Extreme Networks GTAC.** Use entirely at your own risk.
 
 Requires the **community XCO MCP server** to run against:
 **https://github.com/YuryOstrovsky/xco-mcp-community-server**
+— latest release: **[v1.0.0](https://github.com/YuryOstrovsky/xco-mcp-community-server/releases/tag/v1.0.0)**
 
 ## License
 

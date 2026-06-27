@@ -18,9 +18,39 @@ warning in the [README](README.md).
 ## Requirements
 
 - A running **XCO MCP Community Server**
-  (https://github.com/YuryOstrovsky/xco-mcp-community-server)
+  (https://github.com/YuryOstrovsky/xco-mcp-community-server) — see its
+  [v1.0.0 release](https://github.com/YuryOstrovsky/xco-mcp-community-server/releases/tag/v1.0.0)
 - `MCP_BASE_URL` pointing to that server
 - No user login or `Authorization` header from the client
+
+## 🚀 Getting started
+
+**Full guide:** [DEPLOY.md](https://github.com/YuryOstrovsky/xco-mcp-community-client-demo/blob/v1.0.0/DEPLOY.md) ·
+**Overview:** [README](https://github.com/YuryOstrovsky/xco-mcp-community-client-demo/blob/v1.0.0/README.md)
+
+Quick version (using the attached image; the community MCP server must already be running):
+
+```bash
+# 1. Load the prebuilt image
+docker load -i xco-mcp-client-community-1.0.0.tar.gz
+
+# 2. Run it, pointing MCP_BASE_URL at your community MCP server.
+#    --add-host lets the container reach a server published on the host.
+docker run -d --name xco-mcp-client -p 5174:5174 --restart unless-stopped \
+  --add-host=host.docker.internal:host-gateway \
+  -e MCP_BASE_URL=http://host.docker.internal:8000 \
+  -v xco-mcp-audit:/app/data \
+  xco-mcp-client-community:1.0.0
+
+# 3. Open the UI
+curl http://localhost:5174/api/health     # {"status":"ok", ...}
+# then browse to http://localhost:5174/
+```
+
+> ⚠️ **No login / no authorization** — run on localhost or a trusted network
+> only. The image contains no credentials. Full deploy (reverse proxy,
+> persistence, networking) is in
+> [DEPLOY.md](https://github.com/YuryOstrovsky/xco-mcp-community-client-demo/blob/v1.0.0/DEPLOY.md).
 
 ## Tested with
 
