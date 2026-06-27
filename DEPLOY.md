@@ -1,9 +1,11 @@
 # XCO MCP Client (Community Edition) — Docker Deployment Guide
 
 A lean, **read-only, authentication-free** client for the community-grade
-XCO MCP server (Tier-1/Tier-2 SAFE_READ tools). There is **no login, no
-OAuth2, no credentials** — you only point it at a reachable community MCP
-server. See [`COMMUNITY.md`](COMMUNITY.md) for what this edition includes.
+XCO MCP server (Tier-1/Tier-2 SAFE_READ tools). There is **no user login and
+no credentials baked into the client** — you only point it at a reachable
+community MCP server. (The deployed system still relies on credentials
+configured for that MCP server.) See [`COMMUNITY.md`](COMMUNITY.md) for what
+this edition includes.
 
 The image is a single container: a FastAPI backend that proxies the MCP
 server and serves the built React UI on **one port (5174)**.
@@ -122,13 +124,18 @@ queries), the Tools browser, and read-only Investigate.
 
 ---
 
-## Configuration — there are no credentials
+## Configuration — no credentials baked into the client image
 
-Unlike the enterprise client, the community edition performs **no
-authentication** in either direction:
+The community client performs **no user login** and sends **no `Authorization`
+header** to the MCP server. The Docker image and source repository must **not**
+include XCO, switch, MCP, or LLM credentials.
 
-- It does **not** log operators in (no users, no roles, no tokens).
-- It calls the community MCP server with **no `Authorization` header**.
+The deployed *system* still depends on credentials configured for the **MCP
+server**, and some settings may be entered or changed through the UI. Treat
+access to the client UI as sensitive: anyone who can reach it can change client
+settings where exposed and invoke read-only tools through the configured MCP
+server. Optional LLM integrations may also use an OpenAI API key or Ollama
+endpoint if configured.
 
 The only runtime configuration is the **MCP server URL** plus optional
 Ollama / OpenAI settings. Change the MCP URL at runtime via the UI:
@@ -246,6 +253,15 @@ The container writes under `/app/data`:
 
 Mounting a named volume at `/app/data` (step 5) preserves both across
 restarts and image updates.
+
+> ⚠️ **Audit log sensitivity**
+>
+> The audit log may contain operator-entered questions, tool names, device
+> names, IP addresses, MCP server URLs, and other operational context.
+>
+> Treat `/app/data/audit.log` as operationally sensitive. Do not publish it,
+> attach it to public issues, or include it in release artifacts unless it has
+> been reviewed and sanitized.
 
 ```bash
 # Back up the audit log
